@@ -1,16 +1,15 @@
 {
   "canisters": {
     "dfx": {
-      "candid": "src/dfx/dfx.did",
-      "package": "dfx",
-      "type": "rust"
+      "main": "src/dfx/main.mo",
+      "type": "motoko"
     },
     "dfx_assets": {
       "dependencies": [
         "dfx"
       ],
       "frontend": {
-        "entrypoint": "src/dfx_assets/src/index.html"
+        "entrypoint": "dist/dfx_assets/index.html"
       },
       "source": [
         "src/dfx_assets/assets",

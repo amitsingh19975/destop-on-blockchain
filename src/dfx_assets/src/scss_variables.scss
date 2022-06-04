@@ -1,0 +1,50 @@
+@import "~quasar/src/css/variables.sass";
+
+.q-page {
+    height: 1px;
+}
+
+.edit-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 1rem;
+}
+
+.no-user-select {
+    -webkit-touch-callout: none;
+    /* iOS Safari */
+    -webkit-user-select: none;
+    /* Safari */
+    -khtml-user-select: none;
+    /* Konqueror HTML */
+    -moz-user-select: none;
+    /* Old versions of Firefox */
+    -ms-user-select: none;
+    /* Internet Explorer/Edge */
+    user-select: none;
+    /* Non-prefixed version, currently
+                                    supported by Chrome, Edge, Opera and Firefox */
+}
+
+.user-select {
+    -webkit-touch-callout: text;
+    /* iOS Safari */
+    -webkit-user-select: text;
+    /* Safari */
+    -khtml-user-select: text;
+    /* Konqueror HTML */
+    -moz-user-select: text;
+    /* Old versions of Firefox */
+    -ms-user-select: text;
+    /* Internet Explorer/Edge */
+    user-select: text;
+    /* Non-prefixed version, currently
+                                    supported by Chrome, Edge, Opera and Firefox */
+}
+
+.ellipsis {
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
