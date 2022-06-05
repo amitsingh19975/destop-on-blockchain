@@ -429,7 +429,7 @@ export const saveFileToAccount = async (file: File, curDir: IDirectory) => {
     }
 };
 
-export const validateImage = async (url: unknown): Promise<boolean> => new Promise((resolve, reject) => {
+export const validateImage = async (url: unknown): Promise<boolean> => new Promise((resolve) => {
     if (typeof url !== 'string') {
         resolve(false);
         return;
@@ -440,7 +440,7 @@ export const validateImage = async (url: unknown): Promise<boolean> => new Promi
         img.onerror = () => resolve(false);
         img.src = url;
     } catch (e) {
-        reject(e);
+        resolve(false);
     }
 });
 

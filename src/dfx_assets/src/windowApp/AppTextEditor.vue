@@ -64,13 +64,6 @@ export default defineComponent({
         async save(): Promise<void> {
             await writeFile<string>({ node: this.openedFile, data: this.editor });
         },
-
-        openFilePicker(): void {
-            this.showFilePicker = true;
-        },
-        closeFilePicker(): void {
-            this.showFilePicker = false;
-        },
     },
     async mounted() {
         this.addAction('File', 'open', {

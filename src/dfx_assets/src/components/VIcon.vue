@@ -113,9 +113,6 @@ export default defineComponent({
             if (isDef(img)) return img.complete && img.naturalHeight === 0;
             return false;
         },
-        imageLoadError(): void {
-            console.log('HERE');
-        },
     },
     computed: {
         shouldShowImage(): boolean {

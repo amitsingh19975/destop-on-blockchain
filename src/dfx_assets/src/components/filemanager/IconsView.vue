@@ -2,7 +2,7 @@
     <span class="fit" ref="rootRef">
         <span style="color: white" v-for="(fs, name, i) in items" :key="childrenKeys[i]">
             <v-item-icon :node="fs" :focused="focusedIconId === i" @click="focusIcon(i, fs)"
-                :edit-mode="editModeIconId === i" :dimmed-focus="isDimmedFocus(i)" @unfocus="unfocus(fs)"
+                :edit-mode="editModeIconId === i" :dimmed-focus="isDimmedFocus(i)" @unfocus="unfocus()"
                 @dbclick="emitDbClick(fs)" @update:position="updatePosition(name, $event)" :ref="setIconsRefs"
                 :style="getIconStyle(name)" v-context-menu="contextMenu" @update:label="renameNode(name, $event)">
             </v-item-icon>
@@ -79,7 +79,7 @@ const focusIcon = (id: number, fs: IFileSystem) => {
     emits('click', fs.name);
 };
 
-const unfocus = (fs: IFileSystem) => {
+const unfocus = () => {
     focusedIconId.value = -1;
     editModeIconId.value = -1;
     curFocusedNode = undefined;
@@ -121,6 +121,7 @@ const iconRearrange = async () => {
 
 watch(() => props.childrenKeys, async () => {
     await iconRearrange();
+    unfocus();
 });
 
 // watch(() => props.pid, () => iconRearrange());

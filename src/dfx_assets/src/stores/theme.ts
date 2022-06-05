@@ -128,7 +128,7 @@ const useTheme = defineStore('useThemeStore', {
         },
         images: {
             desktop: {
-                backgroundImage: undefined as string | undefined,
+                backgroundImage: 'https://images.pexels.com/photos/4245826/pexels-photo-4245826.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' as string | undefined,
             },
         },
     }),

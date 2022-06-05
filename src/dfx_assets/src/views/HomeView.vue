@@ -55,13 +55,17 @@ export default defineComponent({
         ...mapState(useTheme, ['images', 'compColor']),
         getHomeStyle(): CSSProperties {
             const bI = this.images.desktop.backgroundImage;
-            return typeof bI !== 'undefined'
-                ? { backgroundImage: `url("${bI}")` }
+            const backgroundColor = this.compColor(
+                'desktop',
+                'backgroundColor',
+            );
+            return isDef(bI)
+                ? {
+                    backgroundImage: `url("${bI}")`,
+                    backgroundColor,
+                }
                 : {
-                    backgroundColor: this.compColor(
-                        'desktop',
-                        'backgroundColor',
-                    ),
+                    backgroundColor,
                 };
         },
     },

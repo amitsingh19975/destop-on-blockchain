@@ -58,11 +58,7 @@ const contextMenu = {
             after: (err?: Error) => {
                 if (err instanceof Error) {
                     notifyNeg(err);
-                    return;
                 }
-                const iconView = iconViewRef.value;
-                if (!isDef(iconView)) return;
-                iconView.iconRearrange();
             },
         }),
         'Clean Up': {

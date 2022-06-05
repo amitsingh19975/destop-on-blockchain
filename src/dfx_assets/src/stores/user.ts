@@ -6,7 +6,7 @@ interface IUser {
     firstName: string;
     lastName: string;
     password: string;
-    profileAvatar: IIcon,
+    profileAvatar?: IIcon,
 }
 
 const useUser = defineStore('useUserStore', {
@@ -15,7 +15,7 @@ const useUser = defineStore('useUserStore', {
         firstName: 'Amit',
         lastName: 'Singh',
         password: 'xty',
-        profileAvatar: { type: 'Image', data: 'https://cdn.quasar.dev/img/avatar.png' },
+        // profileAvatar: { type: 'Image', data: 'https://cdn.quasar.dev/img/avatar.png' },
     } as IUser),
 });
 

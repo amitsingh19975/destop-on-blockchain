@@ -50,7 +50,9 @@ import ROOT, {
     asDir, cd, IDirectory, IFileSystem, isDir, NodeKind, Path,
 } from '../scripts/fs';
 import { FileManager } from '../scripts/fileManager';
-import { elementShape, isDef, saveFileToAccount } from '../scripts/utils';
+import {
+    clipboardPasteFsNode, elementShape, isDef, saveFileToAccount,
+} from '../scripts/utils';
 import { ShapeType } from '../scripts/types';
 import VBtn from '../components/VBtn.vue';
 import { notifyNeg } from '../scripts/notify';
@@ -172,6 +174,14 @@ export default defineComponent({
         contextMenu(): IContextMenuBindingArgs {
             return {
                 actions: () => ({
+                    paste: clipboardPasteFsNode(this.curDir, {
+                        renameIfCollide: true,
+                        after: (err?: Error) => {
+                            if (err instanceof Error) {
+                                notifyNeg(err);
+                            }
+                        },
+                    }),
                     'Clean Up': {
                         showCondition: () => isDef(this.iconViewRef),
                         action: () => {

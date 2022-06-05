@@ -100,6 +100,10 @@ export const copyFsNode = async (curDir: IDirectory, node: IFileSystem, { rename
             nNode = temp;
             removeAllChildren(child);
         }
+    } else {
+        const temp = await cloneNode(node);
+        if (!isDef(temp)) return new Error(`[copy]: unable to copy ${node._nodeKind}["${node.name}"]`);
+        nNode = temp;
     }
 
     addChild(curDir, nNode);

@@ -42,8 +42,8 @@ export default defineComponent({
     },
     setup() {
         const store = useUser();
-        const profileAvatarData = ref(store.profileAvatar.data);
-        const profileAvatarType = ref<typeof ICON_TYPES[number]>(store.profileAvatar.type);
+        const profileAvatarData = ref(store.profileAvatar?.data || 'account_circle');
+        const profileAvatarType = ref<typeof ICON_TYPES[number]>(store.profileAvatar?.type || 'Material');
         const firstName = ref(store.firstName);
         const lastName = ref(store.lastName);
         return {
@@ -63,8 +63,8 @@ export default defineComponent({
             const { firstName, lastName, profileAvatar } = useUser();
             return this.firstName !== firstName
                 || this.lastName !== lastName
-                || profileAvatar.type !== this.profileAvatarType
-                || profileAvatar.data !== this.profileAvatarData;
+                || profileAvatar?.type !== this.profileAvatarType
+                || profileAvatar?.data !== this.profileAvatarData;
         },
     },
     methods: {

@@ -128,7 +128,12 @@ export default defineComponent({
             action: async () => {
                 this.openDialogBox('loading');
                 await this.saveToFS();
-                this.closeDialogBox();
+                this.openDialogBox('confirm', 'saved successfully', {
+                    green: {
+                        label: 'OK',
+                        callback: this.closeDialogBox,
+                    },
+                });
             },
         });
     },

@@ -1,9 +1,10 @@
 <template>
     <span class="fit user">
-        <v-icon class="user-avatar" font-size="90%" :icon="profileAvatar" size="5rem"></v-icon>
-        <div class="scroll user-info">
+        <v-icon class="user-avatar" font-size="100%" :icon="profileAvatar || 'account_circle'" size="5rem">
+        </v-icon>
+        <div class="scroll user-info" style="z-index: 1;">
             <div class="text-caption">Account</div>
-            <span class="text-h6 text-capitalize" style="padding-left: 5px">
+            <span class="text-h6 text-capitalize" style="padding-left: 10px">
                 {{ firstName }} {{ lastName }}
             </span>
         </div>
@@ -59,6 +60,8 @@ export default defineComponent({
     position: absolute;
     top: -2rem;
     left: 0;
+    border-radius: 100%;
+    background-color: v-bind(getBgColor());
 }
 
 .user-info {
