@@ -102,20 +102,20 @@ const setIconsRefs = (el: unknown) => {
     if (!(el instanceof HTMLElement)) iconRef = el as VItemIconType;
 };
 
-const parentShape = computed(() => {
+const parentShape = () => {
     const temp = useWindowManager().parentShape();
     if (!isDef(props.pid)) return temp;
     const par = elementShape(rootRef.value?.parentElement || rootRef.value);
     if (!isDef(par)) return temp;
     return Array.isArray(par) ? par[0] : par;
-});
+};
 
 const iconRearrange = async () => {
     await nextTick(async () => {
         if (typeof iconRef === 'undefined') return;
         const { itemSize = { width: 0, height: 0 } } = iconRef;
         Object.assign(iconShape, itemSize);
-        await ascendingOrderAndSavePostiion(props.direction || 'row', positions, props.items, iconShape, parentShape.value, 'icon.json', root);
+        await ascendingOrderAndSavePostiion(props.direction || 'row', positions, props.items, iconShape, parentShape(), 'icon.json', root);
     });
 };
 

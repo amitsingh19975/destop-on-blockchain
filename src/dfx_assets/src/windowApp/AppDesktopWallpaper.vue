@@ -43,6 +43,7 @@ import { defineComponent, ref } from 'vue';
 import baseWindowComp from '../scripts/baseWindowComp';
 import VBtn from '../components/VBtn.vue';
 import useTheme from '../stores/theme';
+import useIcons from '../stores/icons';
 
 type SelectorType = 'color' | 'url';
 
@@ -83,6 +84,12 @@ export default defineComponent({
             this.closeDialogBox();
             await this.show();
         },
+    },
+    registerIcon(): void {
+        useIcons().registerComponentIcon('AppDesktopWallpaper', {
+            type: 'Material',
+            data: 'wallpaper',
+        });
     },
 });
 </script>

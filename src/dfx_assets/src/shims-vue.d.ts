@@ -7,14 +7,6 @@ declare module "*.vue" {
     import type { DefineComponent, defineProps } from "vue";
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/ban-types
     const component: DefineComponent<{}, {}, any>;
-    declare module 'vue' {
-        interface ComponentCustomProperties {
-            wBeforeLoaded?: () => Promise<void> | void;
-            wVisible?: () => Promise<void> | void;
-            wBeforeDestroy?: () => Promise<void> | void;
-            wDestory?: () => Promise<void> | void;
-        }
-    }
     export default component;
 }
 

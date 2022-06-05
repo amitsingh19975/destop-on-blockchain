@@ -268,6 +268,12 @@ export default defineComponent({
     registerExtenstion(): void {
         useExtMapping().addMappingUsingArray(DefaultAudioExt, 'audio', 'AppMusicPlayer');
     },
+    registerIcon(): void {
+        useIcons().registerComponentIcon('AppMusicPlayer', {
+            type: 'Material',
+            data: 'headset',
+        });
+    },
     unmounted() {
         // this.handler?.;
     },

@@ -17,8 +17,15 @@ import { notifyNeg } from './notify';
 import VFilePicker from '../components/VFilePicker.vue';
 
 declare module 'vue' {
+    interface ComponentCustomProperties {
+        wBeforeLoaded?: () => Promise<void> | void;
+        wVisible?: () => Promise<void> | void;
+        wBeforeDestroy?: () => Promise<void> | void;
+        wDestory?: () => Promise<void> | void;
+    }
     interface ComponentCustomOptions {
         registerExtenstion?(): void;
+        registerIcon?(): void;
     }
 }
 const BoxTypes = ['danger', 'confirm', 'warning', 'info', 'loading'] as const;
@@ -195,6 +202,7 @@ export default defineComponent({
                 return undefined;
             }
             if (!isFile(node)) {
+                console.log('HERE', currSelection, filename);
                 this.openDialogBox('danger', `Open File must be a "File" kind, but found "${node._nodeKind}"`);
                 return undefined;
             }
@@ -207,6 +215,7 @@ export default defineComponent({
         async openBlockingFilePicker({ closeOnFailure = false }: {
             closeOnFailure?: boolean
         }): Promise<void> {
+            this.closeDialogBox();
             await new Promise<void>((resolve) => {
                 mFilePicker.closeOnFailure = closeOnFailure;
                 mFilePicker.resolve = () => {

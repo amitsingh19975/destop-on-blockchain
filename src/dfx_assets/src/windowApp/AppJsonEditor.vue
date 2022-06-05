@@ -1,8 +1,8 @@
 <template>
     <div class="fit">
         <v-dialog-box v-bind="dialogBoxProps"></v-dialog-box>
-        <v-file-picker v-model="showFilePicker" v-if="rootDir" :root="rootDir" @selected="openFile"
-            default-extension="json" :extension-list="{ json: /.json/ }">
+        <v-file-picker v-bind="filePickerProps" @selected="openFile" default-extension="json"
+            :extension-list="{ json: /.json/ }">
         </v-file-picker>
     </div>
 </template>
@@ -13,7 +13,9 @@ import { JSONEditor, JSONContent } from 'svelte-jsoneditor/dist/jsoneditor.js';
 import BaseWindowComp from '../scripts/baseWindowComp';
 import { readFile, writeFile } from '../scripts/storage';
 import useIcons from '../stores/icons';
-import { IFile, IFileSystem, isFile } from '../scripts/fs';
+import {
+    IDirectory, IFile, IFileSystem, isFile,
+} from '../scripts/fs';
 import { isDef } from '../scripts/utils';
 import useExtMapping from '../stores/extMapping';
 
@@ -54,26 +56,33 @@ export default defineComponent({
             }
         },
         async wBeforeLoaded(): Promise<void> {
-            let errOr: Error | undefined;
-            this.openedFile = this.file;
+            if (this.isSelf) {
+                await this.openBlockingFilePicker({ closeOnFailure: true });
+            } else {
+                let errOr: Error | undefined;
+                this.openedFile = this.file;
 
-            if (isDef(this.openedFile)) {
-                const data = this.json || await readFile({ node: this.openedFile }) || {};
-                errOr = this.constructJsonEditor(data);
-            }
+                if (isDef(this.openedFile)) {
+                    const data = this.json || await readFile({ node: this.openedFile }) || {};
+                    errOr = this.constructJsonEditor(data);
+                }
 
-            this.closeDialogBox();
-            if (errOr instanceof Error) {
-                this.openDialogBox('danger', errOr.message);
-                return;
+                if (errOr instanceof Error) {
+                    this.openDialogBox('danger', errOr.message);
+                    return;
+                }
+                this.closeDialogBox();
             }
 
             await this.show();
         },
-        async openFile(node: IFileSystem | null): Promise<void> {
-            if (!isDef(node)) return;
-            if (!isFile(node)) {
-                this.openDialogBox('danger', `Open File must be a "File" kind, but found "${node._nodeKind}"`);
+        async openFile(
+            currDir: IDirectory,
+            currSelection: IFileSystem | null,
+            filename: string | null,
+        ): Promise<void> {
+            const node = this.openFileHelper(currDir, currSelection, filename);
+            if (!isDef(node)) {
                 return;
             }
             this.openedFile = node;
@@ -84,12 +93,7 @@ export default defineComponent({
             this.constructJsonEditor(data as JSONType);
             this.closeDialogBox();
         },
-        openFilePicker(): void {
-            this.showFilePicker = true;
-        },
-        closeFilePicker(): void {
-            this.showFilePicker = false;
-        },
+
         async saveToFS(): Promise<void> {
             const { openedFile, handler } = this;
             if (!isDef(openedFile) || !isDef(handler)) return;
@@ -104,6 +108,12 @@ export default defineComponent({
     },
     registerExtenstion(): void {
         useExtMapping().addMapping('json', 'json', 'AppJsonEditor');
+    },
+    registerIcon(): void {
+        useIcons().registerComponentIcon('AppJsonEditor', {
+            type: 'Material',
+            data: 'data_object',
+        });
     },
     async mounted() {
         this.setIcon({ type: 'Fontawesome', data: 'fa-solid fa-file-code' });

@@ -1,7 +1,7 @@
 <template>
     <div class="fit bg-blue-grey-8 container q-pa-sm">
         <v-icon font-size="90%" :icon="{ type: profileAvatarType, data: profileAvatarData }" size="6rem"
-            class="text-white"></v-icon>
+            class="text-white" fallback-icon="account_circle"></v-icon>
         <div style="margin-top: 1rem; gap: 0.5rem" class="column">
             <q-input class="bg-blue-grey-10" readonly :model-value="uid" label="UID" outlined color="white" dark>
             </q-input>
@@ -93,5 +93,4 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-.container {}
 </style>

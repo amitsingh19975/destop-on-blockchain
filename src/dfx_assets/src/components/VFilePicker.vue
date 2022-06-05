@@ -91,26 +91,7 @@ export default {
                 </div>
             </q-card-section>
         </q-card>
-        <q-dialog v-model="newPrompt.show" persistent>
-            <q-card style="min-width: 400px">
-                <q-card-section>
-                    <div class="text-h6">Name of the {{ newPrompt.type === 'Dir' ? 'Directory' : newPrompt.type }}</div>
-                </q-card-section>
-
-                <q-card-section class="q-pt-none row no-wrap" style="gap: 1rem">
-                    <v-icon :icon="getNewFileOrFolderIcon" class="text-blue-grey-8" square fontSize="90%"></v-icon>
-                    <q-input dense v-model.trim="newPrompt.value" class="col-grow" bg-color="blue-grey-2"
-                        color="blue-grey-8" label-color="white" outlined autofocus @keyup.enter="createNewFileOrFolder"
-                        :error="!!error.newFileOrFolder" :error-message="error.newFileOrFolder" />
-                </q-card-section>
-
-                <q-card-actions align="right" class="text-primary">
-                    <v-btn class="bg-green text-white" flat border label="Create" @click="createNewFileOrFolder">
-                    </v-btn>
-                    <v-btn class="bg-red text-white" flat border label="Cancel" @click="closeNewDialog"></v-btn>
-                </q-card-actions>
-            </q-card>
-        </q-dialog>
+        <v-new-file :root="curDir" v-model="newPrompt" :type="newPromptType"></v-new-file>
     </q-dialog>
 </template>
 
@@ -134,6 +115,7 @@ import { FileManager } from '../scripts/fileManager';
 import { isDef } from '../scripts/utils';
 import useIcons from '../stores/icons';
 import VIcon from './VIcon.vue';
+import VNewFile from './VNewFile.vue';
 
 type PatternType = RegExp | string;
 type MatchingListType = Record<string, PatternType>;
@@ -175,15 +157,9 @@ const curSelection = ref<IFileSystem | null>(props.root);
 const curDir = ref<IDirectory>(props.root);
 const level = ref(0);
 const history = ref<IDirectory[]>([]);
-const newPrompt = reactive({
-    show: false,
-    type: 'None' as (NodeKind | 'None'),
-    value: '',
-});
-const error = reactive({
-    newFileOrFolder: undefined as (string | undefined),
-});
 const listViewRef = ref<InstanceType<typeof ListView> | null>(null);
+const newPrompt = ref(false);
+const newPromptType = ref<NodeKind | 'None'>('None');
 
 const normalizeValueText = (val: string | RegExp, len = 30) => {
     const temp = typeof val === 'string' ? val : val.toString().replaceAll('/', '');
@@ -299,10 +275,6 @@ const notifyClose = () => {
 
 const path = computed((): string[] => Path.pathArrayFromFS(curDir.value));
 
-watch(() => newPrompt.value, (val) => {
-    if (val.length !== 0) error.newFileOrFolder = undefined;
-});
-
 watch(() => filename.value, (val: string) => {
     if (!isDef(curSelection.value)) return;
     if (val !== curSelection.value.name && isDef(listViewRef.value)) {
@@ -311,49 +283,10 @@ watch(() => filename.value, (val: string) => {
     }
 });
 
-const createNewFileOrFolder = async () => {
-    const { value, type } = newPrompt;
-
-    if (value.length === 0) {
-        error.newFileOrFolder = 'name cannot be empty, please check!';
-        return;
-    }
-    if (type === 'None') {
-        error.newFileOrFolder = 'invalid kind found; kind can be either "Dir" or "File"';
-        return;
-    }
-    if (type === 'Dir') {
-        makeDir({
-            name: value,
-        }, curDir.value);
-    } else {
-        makeFile({
-            name: value,
-        }, curDir.value);
-    }
-    newPrompt.show = false;
-    newPrompt.type = 'None';
+const openNewDialog = (type: NodeKind | 'None') => {
+    newPromptType.value = type;
+    newPrompt.value = true;
 };
-
-const closeNewDialog = () => {
-    newPrompt.show = false;
-    newPrompt.type = 'None';
-    newPrompt.value = '';
-};
-
-const openNewDialog = (type: typeof newPrompt['type']) => {
-    Object.assign(newPrompt, {
-        type,
-        value: '',
-        show: true,
-    });
-};
-
-const getNewFileOrFolderIcon = computed(() => {
-    const store = useIcons();
-    if (newPrompt.type === 'None') return store.icons.unknown;
-    return newPrompt.type === 'Dir' ? store.fsIcon('folder') : store.fsIcon('file');
-});
 
 onMounted(() => {
     history.value.push(curDir.value);

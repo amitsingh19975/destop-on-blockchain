@@ -108,6 +108,7 @@ export namespace FileManager {
         app: '.app',
         image: /\.(gif|jpe?g|tiff?|png|webp|bmp)$/i,
         audio: /\.(mp3|wav)$/i,
+        video: /\.(mp4|webm|ogv)$/i,
         file: '%File',
         dir: '%Dir',
     } as const;

@@ -53,6 +53,11 @@ export default defineComponent({
             type: [String, Array, Object] as PropType<StyleValue>,
             required: false,
         },
+        fallbackIcon: {
+            type: [String, Object] as PropType<string | IIcon | Promise<string | IIcon>>,
+            required: false,
+            default: () => ({ type: 'Fontawesome', data: 'fa-solid fa-circle-question' } as IIcon),
+        },
     },
     setup() {
         return {
@@ -65,8 +70,8 @@ export default defineComponent({
     },
 
     methods: {
-        async normIcon(): Promise<NormalizedIconType> {
-            const temp = await this.icon;
+        async normIconHelper(icon?: string | IIcon | Promise<string | IIcon> | undefined): Promise<NormalizedIconType> {
+            const temp = await icon;
             if (!isDef(temp)) { return { type: 'none', data: '' }; }
             return typeof temp === 'string'
                 ? { type: isURI(temp) ? 'img' : 'icon', data: temp }
@@ -75,13 +80,16 @@ export default defineComponent({
                     data: temp.data,
                 };
         },
+        async normIcon(): Promise<NormalizedIconType> {
+            return this.normIconHelper(this.icon);
+        },
         async handleLoading(): Promise<void> {
             this.normalizedIcon = await this.normIcon();
             const { img } = this;
             if (this.normalizedIcon.type === 'img' && isDef(img)) {
                 img.onload = () => { this.resourceDownloading = false; };
-                img.onerror = () => {
-                    this.normalizedIcon = { type: 'icon', data: 'account_circle' };
+                img.onerror = async () => {
+                    this.normalizedIcon = await this.normIconHelper(this.fallbackIcon);
                 };
                 img.src = this.normalizedIcon.data;
                 // if (!this.imgCompleted()) this.resourceDownloading = this.normalizedIcon?.type === 'img';

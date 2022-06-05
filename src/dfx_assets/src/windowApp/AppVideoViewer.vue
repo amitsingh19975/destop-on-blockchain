@@ -105,12 +105,6 @@ export default defineComponent({
             this.closeDialogBox();
         },
 
-        openFilePicker(): void {
-            this.showFilePicker = true;
-        },
-        closeFilePicker(): void {
-            this.showFilePicker = false;
-        },
         resizeTheWindow(): void {
             const shape = elementShape(this.videoPlayerRef) as ShapeType;
             if (!isDef(shape)) return;
@@ -136,6 +130,12 @@ export default defineComponent({
     },
     registerExtenstion(): void {
         useExtMapping().addMappingUsingArray(DefaultVideoExt, 'video', 'AppVideoViewer');
+    },
+    registerIcon(): void {
+        useIcons().registerComponentIcon('AppVideoViewer', {
+            type: 'Material',
+            data: 'video_library',
+        });
     },
     unmounted() {
         this.handler?.dispose();

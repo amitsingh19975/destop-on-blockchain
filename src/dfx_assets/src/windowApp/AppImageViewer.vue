@@ -102,13 +102,6 @@ export default defineComponent({
             this.image = errOr;
             this.closeDialogBox();
         },
-
-        openFilePicker(): void {
-            this.showFilePicker = true;
-        },
-        closeFilePicker(): void {
-            this.showFilePicker = false;
-        },
     },
     async mounted() {
         this.addAction('File', 'open', {
@@ -120,6 +113,12 @@ export default defineComponent({
     },
     registerExtenstion(): void {
         useExtMapping().addMappingUsingArray(DefaultImageExt, 'image', 'AppImageViewer');
+    },
+    registerIcon(): void {
+        useIcons().registerComponentIcon('AppImageViewer', {
+            type: 'Material',
+            data: 'image',
+        });
     },
     unmounted() {
         // this.handler?.;

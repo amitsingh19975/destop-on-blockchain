@@ -22,16 +22,19 @@
                 </template>
 
                 <template v-slot:after>
-                    <icons-view :items="children" :children-keys="Object.keys(children)" direction="col" :pid="pid"
-                        :key="splitterModel" @dbclick="open">
-                    </icons-view>
-                    <v-droppable :drop-callback="addFilesFromSystem"></v-droppable>
+                    <div class="fit" v-context-menu="contextMenu">
+                        <icons-view ref="iconViewRef" :items="children" :children-keys="Object.keys(children)"
+                            direction="col" :pid="pid" :key="splitterModel" @dbclick="open">
+                        </icons-view>
+                        <v-droppable :drop-callback="addFilesFromSystem"></v-droppable>
+                    </div>
                 </template>
 
             </q-splitter>
         </main>
 
         <v-dialog-box v-bind="dialogBoxProps"></v-dialog-box>
+        <v-new-file :root="curDir" :type="newFileType" v-model="newFilePrompt"></v-new-file>
     </div>
 </template>
 
@@ -39,11 +42,12 @@
 import {
     defineComponent, ref, shallowRef,
 } from 'vue';
+import { ionFileTrayFull } from '@quasar/extras/ionicons-v6';
 import BaseWindowComp from '../scripts/baseWindowComp';
 import IconsView from '../components/filemanager/IconsView.vue';
 import VTree from '../components/VTree.vue';
 import ROOT, {
-    asDir, cd, IDirectory, IFileSystem, isDir, Path,
+    asDir, cd, IDirectory, IFileSystem, isDir, NodeKind, Path,
 } from '../scripts/fs';
 import { FileManager } from '../scripts/fileManager';
 import { elementShape, isDef, saveFileToAccount } from '../scripts/utils';
@@ -52,6 +56,9 @@ import VBtn from '../components/VBtn.vue';
 import { notifyNeg } from '../scripts/notify';
 import VAddressBar from '../components/VAddressBar.vue';
 import VDroppable from '../components/VDroppable.vue';
+import useIcons from '../stores/icons';
+import { IContextMenuBindingArgs } from '../plugins/v-context-menu';
+import VNewFile from '../components/VNewFile.vue';
 
 export default defineComponent({
     name: 'AppFileManager',
@@ -61,6 +68,7 @@ export default defineComponent({
         VBtn,
         VAddressBar,
         VDroppable,
+        VNewFile,
     },
     extends: BaseWindowComp,
     setup() {
@@ -72,6 +80,9 @@ export default defineComponent({
             mainRef: ref<HTMLElement | null | { $el: HTMLElement }>(null),
             iconViewShape: ref<ShapeType>({ width: 0, height: 0 }),
             newPath: ref<string[]>([]),
+            iconViewRef: ref<InstanceType<typeof IconsView> | null>(null),
+            newFileType: ref<NodeKind | 'None'>('None'),
+            newFilePrompt: ref(false),
         };
     },
     methods: {
@@ -158,6 +169,36 @@ export default defineComponent({
         path(): string[] {
             return Path.pathArrayFromFS(this.curDir);
         },
+        contextMenu(): IContextMenuBindingArgs {
+            return {
+                actions: () => ({
+                    'Clean Up': {
+                        showCondition: () => isDef(this.iconViewRef),
+                        action: () => {
+                            this.iconViewRef!.iconRearrange();
+                        },
+                        icon: {
+                            type: 'Fontawesome',
+                            data: 'fa-solid fa-arrow-down-a-z',
+                        },
+                    },
+                    'New File': {
+                        action: () => {
+                            this.newFileType = 'File';
+                            this.newFilePrompt = true;
+                        },
+                        icon: useIcons().icons.newFile,
+                    },
+                    'New Folder': {
+                        action: () => {
+                            this.newFileType = 'Dir';
+                            this.newFilePrompt = true;
+                        },
+                        icon: useIcons().icons.newFolder,
+                    },
+                }),
+            };
+        },
     },
     watch: {
         splitterModel(): void {
@@ -175,6 +216,12 @@ export default defineComponent({
         // });
         this.$nextTick(() => {
             this.setShape();
+        });
+    },
+    registerIcon(): void {
+        useIcons().registerComponentIcon('AppFileManager', {
+            type: 'Ion',
+            data: ionFileTrayFull,
         });
     },
 });

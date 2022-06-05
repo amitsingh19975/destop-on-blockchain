@@ -96,6 +96,12 @@ export default defineComponent({
     registerExtenstion(): void {
         useExtMapping().addMapping('txt', 'text', 'AppTextEditor');
     },
+    registerIcon(): void {
+        useIcons().registerComponentIcon('AppTextEditor', {
+            type: 'Material',
+            data: 'edit_note',
+        });
+    },
     unmounted() {
         // this.handler?.;
     },

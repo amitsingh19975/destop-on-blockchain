@@ -28,6 +28,7 @@ export default function registerWinApp(app: App): void {
         if (typeof app.component(name) === 'undefined') {
             app.component(name, comp);
             comp.registerExtenstion?.();
+            comp.registerIcon?.();
         }
     });
 }
@@ -37,4 +38,19 @@ export type ComponentValueType = typeof components;
 export const registeredComponentName = (key: ComponentType) => {
     const { name } = components[key];
     return typeof name === 'undefined' ? key : name;
+};
+
+const makeNameFromKey = (str: string): string => str.substring(3)
+    .replace(/([A-Z])/g, ' $1').trim();
+
+export const getAllApps = () => {
+    const res = [] as { name: string, component: ComponentType }[];
+    Object.keys(components).forEach((k) => {
+        if (k === 'VDefaultWindow' || k === 'AppProfile') return;
+        res.push({
+            name: makeNameFromKey(k),
+            component: k as ComponentType,
+        });
+    });
+    return res;
 };
