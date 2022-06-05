@@ -6,6 +6,8 @@ import AppTextEditor from './AppTextEditor.vue';
 import AppImageViewer from './AppImageViewer.vue';
 import AppVideoViewer from './AppVideoViewer.vue';
 import AppMusicPlayer from './AppMusicPlayer.vue';
+import AppDesktopWallpaper from './AppDesktopWallpaper.vue';
+import AppProfile from './AppProfile.vue';
 
 const components = {
     AppJsonEditor,
@@ -15,6 +17,8 @@ const components = {
     AppImageViewer,
     AppVideoViewer,
     AppMusicPlayer,
+    AppDesktopWallpaper,
+    AppProfile,
 } as const;
 
 export default function registerWinApp(app: App): void {

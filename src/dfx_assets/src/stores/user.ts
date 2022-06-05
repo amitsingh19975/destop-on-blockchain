@@ -1,18 +1,21 @@
 import { defineStore } from 'pinia';
+import { IIcon } from '../scripts/types';
 
 interface IUser {
-    uuid: string;
+    uid: string;
     firstName: string;
     lastName: string;
     password: string;
+    profileAvatar: IIcon,
 }
 
 const useUser = defineStore('useUserStore', {
     state: () => ({
-        uuid: '0',
+        uid: '0',
         firstName: 'Amit',
         lastName: 'Singh',
         password: 'xty',
+        profileAvatar: { type: 'Image', data: 'https://cdn.quasar.dev/img/avatar.png' },
     } as IUser),
 });
 

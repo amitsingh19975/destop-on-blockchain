@@ -174,8 +174,13 @@ const useTheme = defineStore('useThemeStore', {
         offDarkMode(): void {
             Dark.set(false);
         },
-        setDesktopImage(src: string): void {
-            this.images.desktop.backgroundImage = src;
+        setDesktopWallpapr(type: 'color' | 'image', srcOrColor: string): void {
+            if (type === 'color') {
+                this.images.desktop.backgroundImage = undefined;
+                this.updateComponent('desktop', 'backgroundColor', srcOrColor);
+            } else {
+                this.images.desktop.backgroundImage = srcOrColor;
+            }
         },
     },
 });

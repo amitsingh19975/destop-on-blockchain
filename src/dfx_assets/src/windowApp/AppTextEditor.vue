@@ -85,11 +85,9 @@ export default defineComponent({
                 this.openDialogBox('loading');
                 await this.save();
                 this.openDialogBox('confirm', 'saved successfully', {
-                    confirm: {
-                        green: {
-                            label: 'OK',
-                            callback: this.closeDialogBox,
-                        },
+                    green: {
+                        label: 'OK',
+                        callback: this.closeDialogBox,
                     },
                 });
             },

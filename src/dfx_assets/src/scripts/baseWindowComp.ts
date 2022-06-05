@@ -170,8 +170,9 @@ export default defineComponent({
         initDialogBox(args: IDialogBox['btns']): void {
             Object.assign(mDialogBox.btns, args);
         },
-        openDialogBox(type: IDialogBox['type'], message?: string, args?: IDialogBox['btns']): void {
-            if (isDef(args)) this.initDialogBox(args);
+
+        openDialogBox<T extends IDialogBox['type']>(type: T, message?: string, args?: IDialogBox['btns'][T]): void {
+            if (isDef(args)) mDialogBox.btns[type] = args;
             mDialogBox.message = message || DEFAULT_DIALOG_MESSAGE[type];
             mDialogBox.type = type;
             mDialogBox.show = true;

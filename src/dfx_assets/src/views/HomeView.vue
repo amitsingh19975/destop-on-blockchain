@@ -1,6 +1,7 @@
 <template>
     <q-page class="fit column justify-center relative-position desktop" :style="getHomeStyle">
-        <span class="fit absolute" style="top: 0; left: 0" @click="focusOn('desktop')" ref="desktopRef">
+        <span class="fit absolute" style="top: 0; left: 0" @click="focusOn('desktop')" ref="desktopRef"
+            v-context-menu="desktopContextMenu">
             <v-desktop :root="curDir"></v-desktop>
             <v-droppable :drop-callback="addFilesFromSystem"></v-droppable>
         </span>
@@ -25,9 +26,10 @@ import useTheme from '../stores/theme';
 import { rootInjectKey } from '../scripts/injectKeys';
 import { writeFile } from '../scripts/storage';
 import VContextMenu from '../components/VContextMenu.vue';
-import { MediaType, WinApp } from '../scripts/types';
+import { IIcon, MediaType, WinApp } from '../scripts/types';
 import VDroppable from '../components/VDroppable.vue';
 import { saveFileToAccount } from '../scripts/utils';
+import { IContextMenuBindingArgs } from '../plugins/v-context-menu';
 
 export default defineComponent({
     name: 'HomeView',
@@ -63,11 +65,27 @@ export default defineComponent({
                     ),
                 };
         },
+        desktopContextMenu(): IContextMenuBindingArgs {
+            const wallpaperIcon = { type: 'Material', data: 'wallpaper' } as IIcon;
+            return {
+                actions: () => ({
+                    'Change Wallpaper': {
+                        icon: wallpaperIcon,
+                        action: () => {
+                            useWindowManager().makeWindow({
+                                name: 'Wallpaper',
+                                componentName: 'AppDesktopWallpaper',
+                                icon: wallpaperIcon,
+                            });
+                        },
+                    },
+                }),
+            };
+        },
     },
     methods: {
         ...mapActions(useLoader, ['loaded']),
         ...mapActions(useWindowManager, ['initWindowManager', 'focusOn']),
-        ...mapActions(useTheme, ['setDesktopImage']),
         addFilesFromSystem(files: FileList): void {
             const len = files.length;
             for (let i = 0; i < len; i += 1) {
@@ -144,10 +162,11 @@ export default defineComponent({
                 type: 'audio/mp3',
             },
         });
-        // useWindowManager().makeWindow({
-        //     name: 'Music Player',
-        //     componentName: 'AppMusicPlayer',
-        // });
+        useWindowManager().makeWindow({
+            name: 'Profile Setting',
+            componentName: 'AppProfile',
+            icon: { type: 'Material', data: 'manage_accounts' },
+        });
         // this.setDesktopImage('https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885_1280.jpg');
         this.loaded();
     },

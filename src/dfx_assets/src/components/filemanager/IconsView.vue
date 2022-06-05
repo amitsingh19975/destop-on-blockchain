@@ -15,8 +15,7 @@
 import { computed, toRef } from '@vue/reactivity';
 import { storeToRefs } from 'pinia';
 import {
-    CSSProperties,
-    defineEmits, defineProps, onMounted, reactive, ref,
+    CSSProperties, onMounted, reactive, ref,
     nextTick,
     watch,
     inject,

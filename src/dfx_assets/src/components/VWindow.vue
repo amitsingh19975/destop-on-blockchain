@@ -12,7 +12,7 @@
             </window-header>
             <q-card class="fit window-main" flat bordered :style="getWindowMainStyle">
                 <q-card-section class="fit" style="padding: 0">
-                    <q-card class="fit window-main-content" style="padding: 0;" flat bordered>
+                    <q-card class="fit window-main-content" style="padding: 0;" flat>
                         <q-card-section class="fit relative-position" style="padding: 0; margin: 0; overflow: auto"
                             ref="windowRef">
                             <keep-alive>

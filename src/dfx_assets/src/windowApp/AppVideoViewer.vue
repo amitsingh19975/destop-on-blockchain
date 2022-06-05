@@ -121,11 +121,9 @@ export default defineComponent({
         const res = this.constructPlayer();
         if (res instanceof Error) {
             this.openDialogBox('danger', res.message, {
-                danger: {
-                    red: {
-                        label: 'exit',
-                        callback: this.close,
-                    },
+                red: {
+                    label: 'exit',
+                    callback: this.close,
                 },
             });
         }

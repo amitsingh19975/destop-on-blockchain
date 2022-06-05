@@ -1,8 +1,6 @@
 <template>
     <span class="fit user">
-        <q-avatar class="user-avatar" size="5rem">
-            <img src="../../../assets/logo.png" :style="imgStyle" />
-        </q-avatar>
+        <v-icon class="user-avatar" font-size="90%" :icon="profileAvatar" size="5rem"></v-icon>
         <div class="scroll user-info">
             <div class="text-caption">Account</div>
             <span class="text-h6 text-capitalize" style="padding-left: 5px">
@@ -21,12 +19,14 @@ import { mapState } from 'pinia';
 import { defineComponent, StyleValue } from 'vue';
 import useTheme from '../../stores/theme';
 import useUser from '../../stores/user';
+import VIcon from '../VIcon.vue';
 
 export default defineComponent({
     name: 'TheTaskBarStartMenuLeftSide',
+    components: { VIcon },
     computed: {
         ...mapState(useTheme, ['compColor', 'colors', 'getColor']),
-        ...mapState(useUser, ['firstName', 'lastName']),
+        ...mapState(useUser, ['firstName', 'lastName', 'profileAvatar']),
         imgStyle(): StyleValue {
             return {
                 border: `5px solid ${this.getBgColor()}`,
@@ -41,11 +41,7 @@ export default defineComponent({
     },
     methods: {
         getBgColor(lightenPer?: number): string {
-            return this.compColor(
-                'taskbarStartMenu',
-                'leftBackgroundColor',
-                lightenPer,
-            );
+            return this.compColor('taskbarStartMenu', 'leftBackgroundColor', lightenPer);
         },
     },
     mounted() { },
@@ -58,19 +54,19 @@ export default defineComponent({
     grid-template-rows: 90% 10%;
     padding-bottom: 0.5rem;
 }
+
 .user-avatar {
     position: absolute;
     top: -2rem;
     left: 0;
-    & img {
-        border: 3px solid black;
-    }
 }
+
 .user-info {
     // max-height: 10rem;
     margin: 0.5rem 0 0 0.5rem;
     padding: 3rem 0.5rem 1rem 0.5rem;
 }
+
 .logout-btn {
     margin: 0 1rem 0 1rem;
     // border-top: 1px solid white;

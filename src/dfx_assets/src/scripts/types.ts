@@ -41,8 +41,10 @@ export interface IPosition {
 
 export type PositionType = PositionKindType | IPosition | [number, number];
 
+export const ICON_TYPES = ['Material', 'Fontawesome', 'Image', 'Ion'] as const;
+
 export interface IIcon {
-    type: 'Material' | 'Fontawesome' | 'Image' | 'Ion';
+    type: typeof ICON_TYPES[number];
     data: string;
 }
 

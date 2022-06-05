@@ -1,13 +1,12 @@
 <template>
     <span class="row justify-center items-center content-center">
-        <q-avatar :square="square" :size="size" v-if="loading || resourceDownloading">
+        <q-avatar :square="square" :size="size" v-show="loading || resourceDownloading">
             <q-spinner color="primary" size="100%" />
         </q-avatar>
-        <q-avatar :square="square" :size="size" v-if="shouldShowImage" v-show="!resourceDownloading">
-            <img :src="normalizedIcon?.data" ref="img" @load="resourceDownloading = false"
-                :class="normalizeClass(innerClass)" :style="normalizeStyle(innerStyle)" />
+        <q-avatar :square="square" :size="size" v-show="shouldShowImage && !resourceDownloading">
+            <img ref="img" :class="normalizeClass(innerClass)" :style="normalizeStyle(innerStyle)" />
         </q-avatar>
-        <q-avatar v-if="shouldShowIcon" v-show="!resourceDownloading" :square="square" :icon="normalizedIcon?.data"
+        <q-avatar v-show="shouldShowIcon && !resourceDownloading" :square="square" :icon="normalizedIcon?.data"
             :size="size" :font-size="fontSize" :class="normalizeClass(innerClass)" :style="normalizeStyle(innerStyle)">
         </q-avatar>
     </span>
@@ -78,9 +77,15 @@ export default defineComponent({
         },
         async handleLoading(): Promise<void> {
             this.normalizedIcon = await this.normIcon();
-            if (this.normalizedIcon.type === 'img') {
-                if (!this.imgCompleted()) this.resourceDownloading = this.normalizedIcon?.type === 'img';
-                if (this.imgLoaded()) this.resourceDownloading = false;
+            const { img } = this;
+            if (this.normalizedIcon.type === 'img' && isDef(img)) {
+                img.onload = () => { this.resourceDownloading = false; };
+                img.onerror = () => {
+                    this.normalizedIcon = { type: 'icon', data: 'account_circle' };
+                };
+                img.src = this.normalizedIcon.data;
+                // if (!this.imgCompleted()) this.resourceDownloading = this.normalizedIcon?.type === 'img';
+                // if (this.imgLoaded()) this.resourceDownloading = false;
             } else {
                 this.resourceDownloading = false;
             }
@@ -100,6 +105,9 @@ export default defineComponent({
             if (isDef(img)) return img.complete && img.naturalHeight === 0;
             return false;
         },
+        imageLoadError(): void {
+            console.log('HERE');
+        },
     },
     computed: {
         shouldShowImage(): boolean {
@@ -113,8 +121,11 @@ export default defineComponent({
         await this.handleLoading();
     },
     watch: {
-        async icon(): Promise<void> {
-            await this.handleLoading();
+        icon: {
+            async handler(val): Promise<void> {
+                await this.handleLoading();
+            },
+            deep: true,
         },
     },
 });
