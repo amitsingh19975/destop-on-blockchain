@@ -29,9 +29,11 @@ const drapOverCallback = (e: DragEvent) => {
     e.preventDefault();
     takeOverTheParent.value = true;
 };
-const drapLeaveCallback = (e: DragEvent) => {
+const drapLeaveCallback = (e: DragEvent): boolean => {
+    if (e.pageX !== 0 || e.pageY !== 0) return false;
     e.preventDefault();
     takeOverTheParent.value = false;
+    return true;
 };
 
 const dropCallback = (e: DragEvent) => {

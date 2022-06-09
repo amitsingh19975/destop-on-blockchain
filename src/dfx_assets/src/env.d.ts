@@ -7,3 +7,5 @@ declare namespace NodeJS {
         VUE_ROUTER_BASE: string | undefined;
     }
 }
+
+declare var __webpack_public_path__: string;

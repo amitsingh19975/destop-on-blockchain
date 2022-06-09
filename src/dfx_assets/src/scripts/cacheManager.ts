@@ -1,9 +1,8 @@
-import { customRef } from 'vue';
 import {
-    AcceptableType, commit, commitBatch, deleteFromCanister, fetchFromCanister, UIDType,
+    AcceptableType, handelCanisterErr, UIDType,
 } from './canisterHelper';
 import { dispatchCanisterEvent } from './events';
-import { GenericObjType, isBlob, isDef } from './utils';
+import { isBlob, isDef } from './utils';
 
 interface IValue {
     name: string,
@@ -22,7 +21,7 @@ export type ErrCallbackType = <E extends Error>(err: E) => void;
 export type LocalCommitCompletionCallbackType = (uid: UIDType) => void;
 export type CanisterCommitCallbackType = (uid: UIDType) => void;
 
-const DEFAULT_UPDATE_TIMER = 60 * 1000;
+const DEFAULT_UPDATE_TIMER = 0 * 1000;
 const DEFAULT_ERROR_CALLBACK: ErrCallbackType = (e: Error) => { throw e; };
 
 const typeToHumanReadableType = (data: unknown): AcceptableType => {
@@ -46,9 +45,10 @@ const handleCommit = async (
         canisterCommitCallback: CanisterCommitCallbackType,
     },
 ): Promise<void> => {
-    const commitHelper = () => commit(uid, val)
-        .then(() => canisterCommitCallback(uid))
-        .catch(errCallback);
+    // const commitHelper = () => commit(uid, val.data)
+    //     .then(() => canisterCommitCallback(uid))
+    //     .catch(errCallback);
+    const commitHelper = () => void 0;
     try {
         dispatchCanisterEvent('write', 'start', {
             uid,
@@ -57,7 +57,7 @@ const handleCommit = async (
             name: val.name,
         });
         if (!lazy) commitHelper();
-        else if (val.timerId) {
+        else if (!isDef(val.timerId)) {
             val.timerId = setTimeout(async () => {
                 await commitHelper();
                 val.isDirty = false;
@@ -88,28 +88,30 @@ export default class CacheManager {
         }
         if (!isDirty) return;
         try {
-            await commit(uid, data);
-            temp.isDirty = false;
+            // const result = await commit(uid, data);
+            // handelCanisterErr(result);
+            // temp.isDirty = false;
         } catch (e) {
             (errCallback || DEFAULT_ERROR_CALLBACK)(e as Error);
         }
     }
 
     async commitAll(errCallback?: ErrCallbackType): Promise<void> {
-        const payload = [] as [UIDType, string][];
-        this._data.forEach((val, k) => {
+        // const payload = [] as BatchDataType;
+        this._data.forEach(async (val, k) => {
             const { timerId, data, isDirty } = val;
             if (timerId) {
                 clearTimeout(timerId);
                 val.timerId = null;
             }
-            if (isDirty) {
-                payload.push([k, JSON.stringify(data)]);
-                val.isDirty = false;
-            }
+            // if (isDirty) {
+            //     payload.push([k, await stringify(data)]);
+            //     val.isDirty = false;
+            // }
         });
         try {
-            await commitBatch(payload);
+            // const result = await commitBatch(payload);
+            // handelCanisterErr(result);
         } catch (e) {
             (errCallback || DEFAULT_ERROR_CALLBACK)(e as Error);
         }
@@ -250,24 +252,25 @@ export default class CacheManager {
                 localEvent: false,
                 name,
             });
-            const res = await fetchFromCanister(uid, { createIfRequired, def });
-            if (res) {
-                const tempData = {
-                    data: res,
-                    timerId: null,
-                    timeout: DEFAULT_UPDATE_TIMER,
-                    isDirty: false,
-                    name,
-                };
-                this._data.set(uid, tempData);
-            }
+            // const res = await fetchFromCanister(uid, { createIfRequired, def, kind: 'storage' });
+            // if (res) {
+            //     const tempData = {
+            //         data: res,
+            //         timerId: null,
+            //         timeout: DEFAULT_UPDATE_TIMER,
+            //         isDirty: false,
+            //         name,
+            //     };
+            //     this._data.set(uid, tempData);
+            // }
             dispatchCanisterEvent('read', 'end', {
                 uid,
                 timeout: 0,
                 localEvent: false,
                 name,
             });
-            return res as T | undefined;
+            // return res as T | undefined;
+            return undefined;
         } catch (e) {
             errCallback(e as Error);
             return undefined;
@@ -287,7 +290,7 @@ export default class CacheManager {
                 localEvent: false,
                 name,
             });
-            await deleteFromCanister(uid);
+            // await deleteFromCanister(uid);
             dispatchCanisterEvent('delete', 'end', {
                 uid,
                 timeout: 0,

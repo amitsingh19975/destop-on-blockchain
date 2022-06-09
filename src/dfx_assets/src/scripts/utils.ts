@@ -510,3 +510,5 @@ export const formatTime = (time: number, {
     }
     return `${helper(allowOverflow ? time : sec)}`;
 };
+
+export const MAX_HARDWARE_CONCURRENCY = navigator.hardwareConcurrency;

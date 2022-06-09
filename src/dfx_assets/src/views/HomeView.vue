@@ -29,6 +29,7 @@ import { IIcon, MediaType, WinApp } from '../scripts/types';
 import VDroppable from '../components/VDroppable.vue';
 import { isDef, saveFileToAccount } from '../scripts/utils';
 import { IContextMenuBindingArgs } from '../plugins/v-context-menu';
+import { populateUsers } from '../scripts/canisterDummyData';
 
 export default defineComponent({
     name: 'HomeView',
@@ -88,6 +89,7 @@ export default defineComponent({
         // }
 
         this.initWindowManager(this.$el);
+        await populateUsers(this.root);
         // makeDir({ name: 'user' }, this.root);
         // makeDir({ name: 'user1' }, this.root);
         // makeDir({ name: 'user2' }, this.root);
@@ -96,22 +98,22 @@ export default defineComponent({
         // makeDir({ name: 'desktop' }, this.root);
         // makeDir({ name: 'game' }, this.root);
         // const temp = makeDir({ name: 'test' }, '/desktop', { root: this.root });
-        makeFile({
-            name: 'test.txt',
-            useNameToGetExt: true,
-        }, this.root);
+        // makeFile({
+        //     name: 'test.txt',
+        //     useNameToGetExt: true,
+        // }, this.root);
 
-        const lofi = makeFile({
-            name: 'Lofi Study',
-            ext: 'mp3',
-        }, this.root);
-        await writeFile<MediaType>({
-            node: lofi,
-            data: {
-                data: './music/lofi-study.mp3',
-                type: 'audio/mp3',
-            },
-        });
+        // const lofi = makeFile({
+        //     name: 'Lofi Study',
+        //     ext: 'mp3',
+        // }, this.root);
+        // await writeFile<MediaType>({
+        //     node: lofi,
+        //     data: {
+        //         data: './music/lofi-study.mp3',
+        //         type: 'audio/mp3',
+        //     },
+        // });
         this.loaded();
     },
 });

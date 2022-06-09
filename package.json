@@ -14,8 +14,7 @@
         "start": "webpack serve --mode development --env development",
         "prestart": "npm run copy:types",
         "copy:types": "rsync -avr .dfx/$(echo ${DFX_NETWORK:-'**'})/canisters/** --exclude='assets/' --exclude='idl/' --exclude='*.wasm' --exclude='*.most' --delete src/declarations",
-        "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src/dfx_assets",
-        "format": "prettier ./src/dfx_assets  --write"
+        "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src/dfx_assets"
     },
     "devDependencies": {
         "@dfinity/agent": "0.11.1",
@@ -69,7 +68,6 @@
         "@quasar/extras": "^1.13.6",
         "express": "^4.18.1",
         "html-to-image": "^1.9.0",
-        "moment": "^2.29.3",
         "pinia": "^2.0.14",
         "quasar": "^2.6.6",
         "sass-resources-loader": "^2.2.5",

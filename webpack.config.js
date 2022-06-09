@@ -42,6 +42,7 @@ function initCanisterEnv() {
         return prev;
     }, {});
 }
+
 const canisterEnvVariables = initCanisterEnv();
 
 const isDevelopment = process.env.NODE_ENV !== "production";
@@ -148,6 +149,7 @@ module.exports = {
             __VUE_OPTIONS_API__: true,
             __VUE_PROD_DEVTOOLS__: isDevelopment,
         }),
+
     ],
     // proxy /api to port 8000 during development
     devServer: {
