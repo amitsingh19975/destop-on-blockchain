@@ -27,7 +27,8 @@ import { writeFile } from '../scripts/storage';
 import VContextMenu from '../components/VContextMenu.vue';
 import { IIcon, MediaType, WinApp } from '../scripts/types';
 import VDroppable from '../components/VDroppable.vue';
-import { isDef, saveFileToAccount } from '../scripts/utils';
+import { isDef } from '../scripts/basic';
+import { saveFileToAccount } from '../scripts/mediaUtils';
 import { IContextMenuBindingArgs } from '../plugins/v-context-menu';
 import { populateUsers } from '../scripts/canisterDummyData';
 

@@ -1,8 +1,8 @@
 import { storeToRefs } from 'pinia';
 import { DirectiveBinding, Directive } from 'vue';
-import { IActionValue, PIDType } from '../scripts/types';
+import { isDef, checkKeys } from '../scripts/basic';
 import {
-    checkKeys, getNodeRoot, HTMLElementFromVueRef, isDef, isEditable,
+    getNodeRoot, HTMLElementFromVueRef, isEditable,
 } from '../scripts/utils';
 import useContextMenu, { IContextMenuValue } from '../stores/contextMenu';
 

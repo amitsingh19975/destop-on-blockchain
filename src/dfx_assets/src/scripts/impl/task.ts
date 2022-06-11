@@ -1,5 +1,4 @@
-import { AcceptableType } from './canisterHelper';
-import { isDef } from './utils';
+import { isDef } from '../basic';
 
 type ResoveType<T> = (value?: T | PromiseLike<T>) => void;
 type RejectType = (reason?: any) => void;
@@ -41,12 +40,10 @@ export class TaskManager<K extends PropertyKey, V extends FunctionType> {
     }
 
     async dequeue(): Promise<boolean> {
-        console.log('DEQ START');
         if (this._pendingPromise) return false;
 
         const item = this._queue.shift();
         if (!isDef(item)) return false;
-        console.log('DEQ ITEM: ', item);
 
         try {
             this._pendingPromise = true;

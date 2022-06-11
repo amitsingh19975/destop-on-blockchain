@@ -51,7 +51,7 @@ import ROOT, {
 } from '../scripts/fs';
 import { FileManager } from '../scripts/fileManager';
 import {
-    clipboardPasteFsNode, elementShape, isDef, saveFileToAccount,
+    clipboardPasteFsNode, elementShape,
 } from '../scripts/utils';
 import { ShapeType } from '../scripts/types';
 import VBtn from '../components/VBtn.vue';
@@ -61,6 +61,8 @@ import VDroppable from '../components/VDroppable.vue';
 import useIcons from '../stores/icons';
 import { IContextMenuBindingArgs } from '../plugins/v-context-menu';
 import VNewFile from '../components/VNewFile.vue';
+import { saveFileToAccount } from '../scripts/mediaUtils';
+import { isDef } from '../scripts/basic';
 
 export default defineComponent({
     name: 'AppFileManager',

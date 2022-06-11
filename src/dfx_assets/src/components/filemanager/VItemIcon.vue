@@ -43,9 +43,8 @@ import VIcon from '../VIcon.vue';
 import VDraggable from '../VDraggable.vue';
 import { FileManager } from '../../scripts/fileManager';
 import { readFile } from '../../scripts/storage';
-import {
-    isDef, isMIMEType, readAsDataURL, validateImage,
-} from '../../scripts/utils';
+import { isDef } from '../../scripts/basic';
+import { isMIMEType, readAsDataURL, validateImage } from '../../scripts/mediaUtils';
 
 const BOX_SHAPE = {
     width: 130,
@@ -111,7 +110,7 @@ onMounted(async () => {
         return;
     }
 
-    const data = await readFile<MediaType>({ node: node.value });
+    const data = await readFile<'generic', MediaType>({ node: node.value });
 
     if (!isDef(data)) {
         loaded();

@@ -19,10 +19,11 @@ import { QList, QMenu } from 'quasar';
 import {
     StyleValue, normalizeClass, normalizeStyle,
 } from 'vue';
+import { isDef } from '../scripts/basic';
 import {
     ClassType,
 } from '../scripts/types';
-import { capitalize, isDef } from '../scripts/utils';
+import { capitalize } from '../scripts/utils';
 import useContextMenu from '../stores/contextMenu';
 import VMenuItem from './VMenuItem.vue';
 

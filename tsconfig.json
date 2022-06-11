@@ -13,7 +13,7 @@
         /* Language and Environment */
         "target": "esnext",
         /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
-        "lib": ["esnext", "dom"],
+        "lib": ["esnext", "dom", "WebWorker.ImportScripts"],
         "jsx": "preserve",
         // "experimentalDecorators": true,                   /* Enable experimental support for TC39 stage 2 draft decorators. */
         // "emitDecoratorMetadata": true,                    /* Emit design-type metadata for decorated declarations in source files. */
@@ -102,6 +102,6 @@
         "skipDefaultLibCheck": true,
         "skipLibCheck": true,
     },
-    "include": ["src/dfx_assets/**/*"],
-    "exclude": ["node_modules", "/target"]
+    "include": ["src/dfx_assets/**/*", "src/sw"],
+    "exclude": ["node_modules", "/target"],
 }

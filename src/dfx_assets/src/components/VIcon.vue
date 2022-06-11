@@ -17,7 +17,8 @@ import {
     defineComponent, PropType, ref, normalizeClass, normalizeStyle, StyleValue,
 } from 'vue';
 import { ClassType, IIcon } from '../scripts/types';
-import { isDef, isURI } from '../scripts/utils';
+import { isURI } from '../scripts/utils';
+import { isDef } from '../scripts/basic';
 
 type NormalizedIconType = { type: 'icon' | 'img' | 'none'; data: string };
 

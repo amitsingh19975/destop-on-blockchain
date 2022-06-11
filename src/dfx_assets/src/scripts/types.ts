@@ -1,6 +1,6 @@
-import { Component, DefineComponent } from 'vue';
+import { DefineComponent } from 'vue';
 import { ComponentType, ComponentValueType } from '../windowApp';
-import { GenericObjType } from './utils';
+import { GenericObjType } from './basic';
 
 export type PIDType = number;
 

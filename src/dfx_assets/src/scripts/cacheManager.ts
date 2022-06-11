@@ -1,28 +1,41 @@
+import { isDef } from './basic';
 import {
-    AcceptableType, handelCanisterErr, UIDType,
+    AcceptableType, fetchAsset, storeAssets, storeAssetsBatch, Type, TypeMapping, UIDType,
 } from './canisterHelper';
-import { dispatchCanisterEvent } from './events';
-import { isBlob, isDef } from './utils';
+import { WriteType } from './storage';
+import {
+    didTimeExpired, isBlob,
+} from './utils';
 
-interface IValue {
-    name: string,
-    data: AcceptableType;
-    timerId: ReturnType<typeof setTimeout> | null;
-    isDirty: boolean,
-    timeout: number,
+interface IItemMetaData {
+    isDirty: boolean;
+    lastRW: number;
+    isProcessOfCommitedToCanister: boolean;
 }
 
-export type WriteType =
-    'append'
-    | 'overwrite'
-    | 'prepend';
+interface IItem {
+    name: string;
+    data: AcceptableType;
+    meta: IItemMetaData;
+}
 
-export type ErrCallbackType = <E extends Error>(err: E) => void;
-export type LocalCommitCompletionCallbackType = (uid: UIDType) => void;
-export type CanisterCommitCallbackType = (uid: UIDType) => void;
+type CommitCallbackArgsType = { error: unknown } | {
+    uid: UIDType,
+    name: string,
+    data: AcceptableType,
+};
 
-const DEFAULT_UPDATE_TIMER = 0 * 1000;
-const DEFAULT_ERROR_CALLBACK: ErrCallbackType = (e: Error) => { throw e; };
+export type LocalAssetCommitCallbackType = (args: CommitCallbackArgsType) => void;
+export type CanisterAssetCommitCallbackType = (args: CommitCallbackArgsType) => void;
+
+type AssetCommitCallbacksType = {
+    localCallback?: LocalAssetCommitCallbackType;
+    canisterCallback?: CanisterAssetCommitCallbackType;
+};
+
+const CACHED_DATA = new Map<UIDType, IItem>();
+const FLUSH_TIMER = 1000 * 60 * 10; // 10 mins;
+const FLUSH_ITEM_THAT_HAS_RW_TIME_LESS_OR_EQUAL_IN_MINS = 30; // 5 mins;
 
 const typeToHumanReadableType = (data: unknown): AcceptableType => {
     if (typeof data === 'string') return 'String';
@@ -34,161 +47,20 @@ const typeMismatchError = (l: AcceptableType, r: AcceptableType) => {
     return new Error(temp);
 };
 
-const handleCommit = async (
-    uid: UIDType,
-    val: IValue,
-    lazy: boolean,
-    {
-        errCallback, canisterCommitCallback,
-    }: {
-        errCallback: ErrCallbackType,
-        canisterCommitCallback: CanisterCommitCallbackType,
-    },
-): Promise<void> => {
-    // const commitHelper = () => commit(uid, val.data)
-    //     .then(() => canisterCommitCallback(uid))
-    //     .catch(errCallback);
-    const commitHelper = () => void 0;
-    try {
-        dispatchCanisterEvent('write', 'start', {
-            uid,
-            timeout: val.timeout,
-            localEvent: false,
-            name: val.name,
-        });
-        if (!lazy) commitHelper();
-        else if (!isDef(val.timerId)) {
-            val.timerId = setTimeout(async () => {
-                await commitHelper();
-                val.isDirty = false;
-                val.timerId = null;
-                dispatchCanisterEvent('write', 'end', {
-                    uid,
-                    timeout: val.timeout,
-                    localEvent: false,
-                    name: val.name,
-                });
-            }, val.timeout);
-        }
-    } catch (e) {
-        errCallback(e as Error);
-    }
-};
+export namespace CacheManager {
 
-export default class CacheManager {
-    private _data = new Map<UIDType, IValue>();
+    export const inCache = (uid: UIDType) => CACHED_DATA.has(uid);
 
-    async forceCommit(uid: string, errCallback?: ErrCallbackType): Promise<void> {
-        const temp = this._data.get(uid);
-        if (!temp) return;
-        const { timerId, data, isDirty } = temp;
-        if (timerId) {
-            clearTimeout(timerId);
-            temp.timerId = null;
-        }
-        if (!isDirty) return;
-        try {
-            // const result = await commit(uid, data);
-            // handelCanisterErr(result);
-            // temp.isDirty = false;
-        } catch (e) {
-            (errCallback || DEFAULT_ERROR_CALLBACK)(e as Error);
-        }
-    }
+    export const flush = (uid?: UIDType) => {
+        if (isDef(uid)) CACHED_DATA.delete(uid);
+        else CACHED_DATA.clear();
+    };
 
-    async commitAll(errCallback?: ErrCallbackType): Promise<void> {
-        // const payload = [] as BatchDataType;
-        this._data.forEach(async (val, k) => {
-            const { timerId, data, isDirty } = val;
-            if (timerId) {
-                clearTimeout(timerId);
-                val.timerId = null;
-            }
-            // if (isDirty) {
-            //     payload.push([k, await stringify(data)]);
-            //     val.isDirty = false;
-            // }
-        });
-        try {
-            // const result = await commitBatch(payload);
-            // handelCanisterErr(result);
-        } catch (e) {
-            (errCallback || DEFAULT_ERROR_CALLBACK)(e as Error);
-        }
-    }
-
-    async set(
-        name: string,
-        uid: UIDType,
-        val: AcceptableType,
-        options?: {
-            mode?: WriteType,
-            lazy?: boolean,
-            timeout?: number,
-            errCallback?: ErrCallbackType,
-            canisterCommitCallback?: CanisterCommitCallbackType,
-            localCommitCompletionCallback?: LocalCommitCompletionCallbackType,
-        },
-    ): Promise<number> {
-        const {
-            mode = 'append',
-            errCallback = DEFAULT_ERROR_CALLBACK,
-            lazy = true,
-            timeout = DEFAULT_UPDATE_TIMER,
-            canisterCommitCallback = (() => void 0),
-            localCommitCompletionCallback = (() => void 0),
-        } = options || {};
-
-        let oldVal = this._data.get(uid);
-        let size = 0;
-
-        if (isDef(oldVal) && mode !== 'overwrite') {
-            const res = await CacheManager
-                ._updateData(
-                    oldVal,
-                    mode || 'append',
-                    val,
-                    errCallback || DEFAULT_ERROR_CALLBACK,
-                );
-            if (isDef(res)) {
-                localCommitCompletionCallback(uid);
-                size = res;
-            }
-        } else {
-            const temp: IValue = {
-                data: val,
-                timerId: null,
-                isDirty: true,
-                timeout,
-                name,
-            };
-            try {
-                this._data.set(uid, temp);
-                localCommitCompletionCallback(uid);
-                oldVal = temp;
-                size = JSON.stringify(temp).length;
-            } catch (e) {
-                errCallback(e as Error);
-                return 0;
-            }
-        }
-
-        handleCommit(uid, oldVal, lazy, {
-            canisterCommitCallback,
-            errCallback,
-        });
-        return size;
-    }
-
-    private static async _updateData(
-        oldValue: IValue,
-        mode: WriteType,
-        data: AcceptableType,
-        errCallback: ErrCallbackType,
-    ): Promise<number | undefined> {
+    const normalizeData = async (oldValue: AcceptableType | undefined, data: AcceptableType, mode: WriteType): Promise<AcceptableType> => {
+        if (!isDef(oldValue)) return data;
         switch (mode) {
             case 'append': {
-                let temp = oldValue.data;
+                let temp = oldValue;
                 if (typeof data === 'string' && typeof temp === 'string') {
                     temp = data;
                 } else if (typeof data === 'object' && typeof temp === 'object') {
@@ -198,15 +70,12 @@ export default class CacheManager {
                     const right = await data.arrayBuffer();
                     temp = new Blob([left, right], { type: temp.type });
                 } else {
-                    errCallback(typeMismatchError(temp, data));
-                    return undefined;
+                    throw typeMismatchError(temp, data);
                 }
-                oldValue.data = temp;
-                oldValue.isDirty = true;
-                break;
+                return temp;
             }
             case 'prepend': {
-                let temp = oldValue.data;
+                let temp = oldValue;
                 if (typeof data === 'string' && typeof temp === 'string') {
                     temp = data + temp;
                 } else if (typeof data === 'object' && typeof temp === 'object') {
@@ -216,89 +85,177 @@ export default class CacheManager {
                     const right = await temp.arrayBuffer();
                     temp = new Blob([left, right], { type: temp.type });
                 } else {
-                    errCallback(typeMismatchError(temp, data));
-                    return undefined;
+                    throw typeMismatchError(temp, data);
                 }
-                oldValue.data = temp;
-                oldValue.isDirty = true;
-                break;
+                return temp;
             }
-
-            default: return undefined;
+            default:
         }
-        return JSON.stringify(oldValue.data).length;
-    }
+        return data;
+    };
 
-    async get<T extends AcceptableType>(
+    const _put = (
+        uid: UIDType,
         name: string,
-        uid: string,
+        data: AcceptableType,
+        meta?: Partial<IItemMetaData>,
+    ) => {
+        const {
+            isDirty = true,
+            isProcessOfCommitedToCanister = false,
+        } = meta || {};
+
+        CACHED_DATA.set(uid, { name, data, meta: { isDirty, lastRW: Date.now(), isProcessOfCommitedToCanister } });
+    };
+
+    export const put = async (
+        uid: UIDType,
+        name: string,
+        data: AcceptableType,
+        options?: {
+            mode?: WriteType,
+            meta?: Partial<IItemMetaData>,
+            assetCommitCallbacks?: AssetCommitCallbacksType
+            sizeCallback?: (size: number) => void,
+        },
+    ) => {
+        const {
+            mode = 'append',
+            meta = {},
+            assetCommitCallbacks = {},
+            sizeCallback = () => void 0,
+        } = options || {};
+
+        const {
+            localCallback,
+            canisterCallback,
+        } = assetCommitCallbacks;
+        const oldValueOr = CACHED_DATA.get(uid);
+        let oldVal: AcceptableType | undefined;
+
+        if (!isDef(oldValueOr)) {
+            if (mode !== 'overwrite') {
+                try {
+                    oldVal = await fetchAsset(uid);
+                } catch (e) {
+                    canisterCallback?.({ error: e });
+                    return;
+                }
+            }
+        } else oldVal = oldValueOr.data;
+        const normalizedData = normalizeData(oldVal, data, mode);
+
+        meta.isProcessOfCommitedToCanister = true;
+
+        _put(uid, name, normalizedData, meta);
+
+        const metaInfo = CACHED_DATA.get(uid)?.meta;
+
+        localCallback?.({ name, data: normalizedData, uid });
+        storeAssets(uid, name, normalizedData, true, sizeCallback).then(() => {
+            if (metaInfo) metaInfo.isDirty = false;
+            canisterCallback?.({ name, data: normalizedData, uid });
+        }).catch((e) => {
+            canisterCallback?.({ error: e });
+        }).finally(() => {
+            if (metaInfo) metaInfo.isProcessOfCommitedToCanister = false;
+        });
+    };
+
+    export const updateMetaData = <K extends keyof IItemMetaData>(uid: UIDType, meta: K, val: IItemMetaData[K]) => {
+        const temp = CACHED_DATA.get(uid);
+        if (!isDef(temp)) return;
+        temp.meta[meta] = val;
+    };
+
+    export const filter = (predicate: (uid: UIDType, meta: IItemMetaData, data: AcceptableType) => boolean) => {
+        const res: [UIDType, IItem][] = [];
+        CACHED_DATA.forEach((el, uid) => {
+            if (predicate(uid, el.meta, el.data)) {
+                res.push([uid, el]);
+            }
+        });
+        return res;
+    };
+
+    const constructWithType = <T extends Type, R = unknown>(type: T): TypeMapping<T, R> => {
+        let temp: AcceptableType;
+        switch (type) {
+            case 'blob': temp = new Blob(); break;
+            case 'string': temp = ''; break;
+            case 'json': case 'generic': default: temp = {}; break;
+        }
+        return temp as TypeMapping<T, R>;
+    };
+
+    export const get = async <T extends Type, R = unknown>(
+        uid: UIDType,
+        name: string,
         options?: {
             createIfRequired?: boolean,
-            def?: AcceptableType,
-            errCallback?: ErrCallbackType,
+            type?: T | undefined,
+            assetCommitCallbacks?: AssetCommitCallbacksType,
         },
-    ): Promise<T | undefined> {
-        const val = this._data.get(uid);
-        if (val) return val.data as T;
+    ): Promise<TypeMapping<T, R> | undefined> => {
         const {
             createIfRequired = false,
-            def = {},
-            errCallback = DEFAULT_ERROR_CALLBACK,
+            type = 'generic',
+            assetCommitCallbacks = {},
         } = options || {};
-        try {
-            dispatchCanisterEvent('read', 'start', {
-                uid,
-                timeout: 0,
-                localEvent: false,
-                name,
-            });
-            // const res = await fetchFromCanister(uid, { createIfRequired, def, kind: 'storage' });
-            // if (res) {
-            //     const tempData = {
-            //         data: res,
-            //         timerId: null,
-            //         timeout: DEFAULT_UPDATE_TIMER,
-            //         isDirty: false,
-            //         name,
-            //     };
-            //     this._data.set(uid, tempData);
-            // }
-            dispatchCanisterEvent('read', 'end', {
-                uid,
-                timeout: 0,
-                localEvent: false,
-                name,
-            });
-            // return res as T | undefined;
-            return undefined;
-        } catch (e) {
-            errCallback(e as Error);
-            return undefined;
-        }
-    }
+        const dataOr = CACHED_DATA.get(uid);
+        let data: AcceptableType;
 
-    async delete(
-        name: string,
-        uid: string,
-        errCallback = DEFAULT_ERROR_CALLBACK,
-    ): Promise<void> {
-        this._data.delete(uid);
-        try {
-            dispatchCanisterEvent('delete', 'start', {
-                uid,
-                timeout: 0,
-                localEvent: false,
-                name,
-            });
-            // await deleteFromCanister(uid);
-            dispatchCanisterEvent('delete', 'end', {
-                uid,
-                timeout: 0,
-                localEvent: false,
-                name,
-            });
-        } catch (e) {
-            errCallback(e as Error);
+        if (!isDef(dataOr)) {
+            try {
+                const res = await fetchAsset(uid);
+                _put(uid, name, res);
+                data = res;
+            } catch {
+                if (!createIfRequired) return undefined;
+                const temp = constructWithType(type) as TypeMapping<T, R>;
+                put(uid, name, temp, { assetCommitCallbacks, mode: 'overwrite' });
+                return temp;
+            }
+        } else {
+            data = dataOr.data;
         }
-    }
+
+        switch (type) {
+            case 'blob': {
+                if (data instanceof Blob) return data as TypeMapping<T, R>;
+                return undefined;
+            }
+            case 'generic': return data as TypeMapping<T, R>;
+            case 'json': {
+                if (typeof data === 'object') return data as TypeMapping<T, R>;
+                return undefined;
+            }
+            case 'string': {
+                if (typeof data === 'string') return data as TypeMapping<T, R>;
+                return undefined;
+            }
+            default: return undefined;
+        }
+    };
+
+    export const commitAllIfDataIsDirty = async (errorCallback?: (e: unknown) => void) => {
+        try {
+            const assets = filter((uid, meta) => meta.isDirty)
+                .map(([uid, item]) => ({ uid, name: item.name, payload: item.data }));
+            await storeAssetsBatch(assets);
+        } catch (e) {
+            if (errorCallback) errorCallback(e);
+            else throw e;
+        }
+    };
 }
+
+export const CACHE_FLUSH_TIMER_ID = setInterval(() => {
+    const ids: UIDType[] = [];
+    CACHED_DATA.forEach((val, uid) => {
+        if (didTimeExpired(FLUSH_ITEM_THAT_HAS_RW_TIME_LESS_OR_EQUAL_IN_MINS, 'min', val.meta.lastRW)) {
+            ids.push(uid);
+        }
+    });
+    ids.forEach((id) => CACHED_DATA.delete(id));
+}, FLUSH_TIMER);

@@ -47,12 +47,13 @@ import { IDirectory, IFile, IFileSystem } from '../scripts/fs';
 import {
     div,
     formatTime,
-    isDef, loadMedia,
 } from '../scripts/utils';
 import useExtMapping from '../stores/extMapping';
 import { DefaultAudioExt } from '../scripts/types';
 import VIcon from '../components/VIcon.vue';
 import { notifyNeg } from '../scripts/notify';
+import { loadMedia } from '../scripts/mediaUtils';
+import { isDef } from '../scripts/basic';
 
 type AudioStateType = 'play' | 'pause' | 'hold';
 

@@ -1,19 +1,19 @@
-import {
-    div, GenericObjType, isDef, MAX_HARDWARE_CONCURRENCY,
-} from './utils';
+import { div } from './utils';
 import { dfx } from './dfx';
 import type {
-    ContentInfo, ContentChunk, ResultType, ResultOkType, ChunkId,
+    ContentInfo, ResultType, ResultOkType, UidType,
 } from './dfx/dfx.did.d';
 import {
-    CanisterMessageType,
     CanisterAddAssetChunkResponseType,
     CanisterErrorResponseType,
     ICanisterAddChunkPayload,
-    ResponseErrorType,
     ICanisterFetchChunkPayload,
     CanisterFetchAssetChunkResponseType,
-} from './sw/types';
+} from './impl/types';
+import CanisterWorker from './impl/canisterWorker';
+import {
+    GenericObjType, JsonObjectType, isDef, MAX_HARDWARE_CONCURRENCY,
+} from './basic';
 
 const {
     commitAssetChunk, deleteAsset, fetchAssetInfo, initiateAssetUpload,
@@ -21,26 +21,22 @@ const {
 
 export type AcceptableType = GenericObjType | string | {} | Blob;
 export type UIDType = string;
+export type Type = 'string' | 'blob' | 'json' | 'generic';
+export type TypeMapping<T extends Type, R = unknown> = T extends 'string' ? string : (T extends 'blob' ? Blob : T extends 'json' ? JsonObjectType : R);
 
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const CHUNK_SIZE = 1.5 * 1024 * 1024; // 1.5MB
 
-// console.log(new URL('./sw/canister.worker.ts', import.meta.url));
-
-const constructWorker = () => new Worker(new URL(/* webpackChunkName: "CanisterWorker" */ './sw/canister.worker.ts', import.meta.url), { type: 'module' });
-const constructWorkerPool = (len: number): Worker[] => {
-    const res = Array<Worker>(len);
+const constructWorkerPool = (len: number): CanisterWorker[] => {
+    const res = Array<CanisterWorker>(len);
     for (let i = 0; i < len; i += 1) {
-        res[i] = constructWorker();
+        res[i] = new CanisterWorker(i);
     }
     return res;
 };
 
 const CANISTER_WORKER_POOL = constructWorkerPool(MAX_HARDWARE_CONCURRENCY);
-
-// @ts-ignore
-window._worker = CANISTER_WORKER_POOL;
 
 // const _storedData = {} as Record<string, AcceptableType>;
 
@@ -65,15 +61,11 @@ window._worker = CANISTER_WORKER_POOL;
 const CUSTOM_STRING_MIME_TYPE = 'amt:string' as const;
 
 export const normalizePayload = async (data: AcceptableType): Promise<{ blob: number[], type: string }> => {
-    if (data instanceof Blob) {
-        return {
-            blob: [...new Uint8Array(await data.arrayBuffer())],
-            type: data.type,
-        };
-    }
+    const buffer = data instanceof Blob ? new Uint8Array(await data.arrayBuffer()) : TEXT_ENCODER.encode(JSON.stringify(data));
+    const type = data instanceof Blob ? data.type : CUSTOM_STRING_MIME_TYPE;
     return {
-        blob: [...TEXT_ENCODER.encode(JSON.stringify(data))],
-        type: CUSTOM_STRING_MIME_TYPE,
+        blob: [...buffer],
+        type,
     };
 };
 
@@ -96,56 +88,46 @@ export const handelCanisterErr = <V extends ResultOkType>(val: ResultType<V>): v
     return true;
 };
 
-const addAssetChunkThroughWorker = (
+const addAssetChunkThroughWorker = async <R = CanisterAddAssetChunkResponseType['result']>(
     workerId: number,
     payload: ICanisterAddChunkPayload,
-    completionHandler: (workerId: number, result: { type: ResponseErrorType, message: string } | ChunkId) => void,
+    unwrapper?: (resp: CanisterAddAssetChunkResponseType | CanisterErrorResponseType) => R,
 ) => {
     const worker = CANISTER_WORKER_POOL[workerId];
-    worker.onerror = console.error;
-    worker.onmessage = ({ data }: MessageEvent) => {
-        const message = data as (CanisterAddAssetChunkResponseType | CanisterErrorResponseType);
-        console.log('START', data);
-        if ('error' in message) {
-            completionHandler(workerId, message.error);
-        } else {
-            completionHandler(workerId, message.result.chunkID);
-        }
-        console.log('FINISHED', data);
-        worker.onmessage = null;
-    };
-    worker.postMessage({
-        method: 'addAssetChunk',
-        payload,
-    } as CanisterMessageType);
+    const res = await worker.submitTask('addAssetChunk', payload);
+    const callback = unwrapper || ((resp) => {
+        if ('error' in resp) throw new Error(resp.error.message);
+        return resp.result;
+    });
+    return callback(res) as R;
 };
 
-const fetchAssetChunkThroughWorker = (
+const fetchAssetChunkThroughWorker = async <R = CanisterFetchAssetChunkResponseType['result']>(
     workerId: number,
     payload: ICanisterFetchChunkPayload,
-    completionHandler: (workerId: number, args: { type: ResponseErrorType, message: string } | ContentChunk) => void,
+    unwrapper?: (resp: CanisterFetchAssetChunkResponseType | CanisterErrorResponseType) => R,
 ) => {
     const worker = CANISTER_WORKER_POOL[workerId];
-    worker.onmessage = ({ data }: MessageEvent) => {
-        const message = data as (CanisterFetchAssetChunkResponseType | CanisterErrorResponseType);
-        if ('error' in message) {
-            completionHandler(workerId, message.error);
-        } else {
-            completionHandler(workerId, message.result.chunk);
-        }
-        worker.onmessage = null;
-    };
-    worker.postMessage({
-        method: 'fetchAssetChunk',
-        payload,
-    } as CanisterMessageType);
+    const res = await worker.submitTask('fetchAssetChunk', payload);
+    const callback = unwrapper || ((resp) => {
+        if ('error' in resp) throw new Error(resp.error.message);
+        return resp.result;
+    });
+    return callback(res) as R;
 };
 
-export const storeAssets = async (uid: UIDType, name: string, payload: AcceptableType, overwrite = false) => {
+export const storeAssets = async (
+    uid: UIDType,
+    name: string,
+    payload: AcceptableType,
+    overwrite = false,
+    sizeCallback = (size: number) => { },
+) => {
     const { blob, type } = await normalizePayload(payload);
     const len = blob.length;
     const { q, r } = div(len, CHUNK_SIZE);
     const chunks = q + (r === 0 ? 0 : 1);
+    sizeCallback(len);
     const info: ContentInfo = {
         uid,
         name,
@@ -168,21 +150,27 @@ export const storeAssets = async (uid: UIDType, name: string, payload: Acceptabl
             },
             uid,
         };
-        promises.push(new Promise<void>((resolve, reject) => {
-            addAssetChunkThroughWorker(workerId, temp, (id, result) => {
-                if (typeof result === 'bigint') {
-                    resolve();
-                    return;
-                }
-                reject(result.message);
-            });
+        promises.push(addAssetChunkThroughWorker(workerId, temp, (resp) => {
+            if ('error' in resp) throw new Error(resp.error.message);
         }));
     }
 
+    // TODO: Handle Failure
     await Promise.all(promises);
 
     const commitErr = await commitAssetChunk(uid);
     handelCanisterErr(commitErr);
+};
+
+export const storeAssetsBatch = async (assets: { uid: UIDType, name: string, payload: AcceptableType }[], overwrite = false) => {
+    const promises = [] as Promise<void>[];
+    assets.forEach((asset) => promises.push(storeAssets(asset.uid, asset.name, asset.payload)));
+    try {
+        await Promise.all(promises);
+    } catch (e) {
+        // TODO: Handle failure case
+        console.warn(e);
+    }
 };
 
 export const fetchAsset = async (uid: UIDType): Promise<AcceptableType> => {
@@ -191,26 +179,33 @@ export const fetchAsset = async (uid: UIDType): Promise<AcceptableType> => {
 
     const { ok: info } = infoErr as { ok: ContentInfo };
 
-    const { totalChunks, dtype: type, size } = info;
+    const { totalChunks, dtype: type } = info;
     const promises: Promise<void>[] = [];
-    const one = BigInt(1);
     const chunks = Array<number[]>(Number(totalChunks));
 
-    for (let chunkId = BigInt(0), j = 0; chunkId < totalChunks; chunkId += one, j += 1) {
+    for (let chunkId = BigInt(0), j = 0; chunkId < totalChunks; chunkId += 1n, j += 1) {
         const workerId = j % CANISTER_WORKER_POOL.length;
-        promises.push(new Promise<void>((resolve, reject) => {
-            fetchAssetChunkThroughWorker(workerId, { chunkId, uid }, (id, result) => {
-                if ('message' in result) {
-                    reject(result.message);
-                    return;
-                }
-                const { chunk, chunkId: cid } = result;
-                chunks[Number(cid)] = chunk;
-                resolve();
-            });
+        promises.push(fetchAssetChunkThroughWorker(workerId, { chunkId, uid }, (resp) => {
+            if ('error' in resp) throw new Error(resp.error.message);
+            chunks.push(resp.result.chunk.chunk);
         }));
     }
+
     await Promise.all(promises);
+
     const flatenedArray = chunks.flat();
     return parse({ blob: flatenedArray, type });
+};
+
+export const fetchAssetBatch = async (uids: UIDType[]): Promise<Record<UidType, AcceptableType>> => {
+    const promises = [] as Promise<void>[];
+    const res = {} as Record<UidType, AcceptableType>;
+    uids.forEach((uid) => {
+        const runFn = async () => {
+            const data = await fetchAsset(uid);
+            res[uid] = data;
+        };
+        promises.push(runFn());
+    });
+    return res;
 };

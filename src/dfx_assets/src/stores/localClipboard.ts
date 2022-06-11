@@ -1,7 +1,7 @@
 import { computed } from '@vue/reactivity';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { GenericObjType, isDef } from '../scripts/utils';
+import { GenericObjType, isDef } from '../scripts/basic';
 
 type ClipboardKindType = 'text' | 'json' | 'blob';
 type ClipboardType = string | Blob | GenericObjType;

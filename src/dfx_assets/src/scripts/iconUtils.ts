@@ -57,11 +57,11 @@ export const ascendingOrderAndSavePostiion = async (
     configFileName: string,
     root?: IDirectory,
 ) => {
-    const fileNode = await openFile<IIconPositionType>({
-        root, path: ['conf', 'Test', configFileName], def: {}, create: true,
+    const fileNode = await openFile<'generic', IIconPositionType>({
+        root, path: ['conf', 'Test', configFileName], create: true,
     });
 
-    const file = fileNode && await readFile<IIconPositionType>({ node: fileNode });
+    const file = fileNode && await readFile<'generic', IIconPositionType>({ node: fileNode });
     const childrenNodes = Object.values(children);
     if (childrenNodes.length === 0) return;
 
@@ -73,7 +73,11 @@ export const ascendingOrderAndSavePostiion = async (
         writeFile<IIconPositionType>({
             node: fileNode,
             data: out,
-            errCallback: (e) => console.error(e),
+            localCommitCompletionCallback: (args) => {
+                if ('error' in args) {
+                    console.error(args.error);
+                }
+            },
         });
     }
 };

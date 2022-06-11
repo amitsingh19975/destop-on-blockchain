@@ -14,7 +14,7 @@ import BaseWindowComp from '../scripts/baseWindowComp';
 import { readFile, writeFile } from '../scripts/storage';
 import useIcons from '../stores/icons';
 import { IDirectory, IFile, IFileSystem } from '../scripts/fs';
-import { isDef } from '../scripts/utils';
+import { isDef } from '../scripts/basic';
 import useExtMapping from '../stores/extMapping';
 
 export default defineComponent({

@@ -22,6 +22,7 @@ import {
     unref,
 } from 'vue';
 import { IContextMenuBindingArgs } from '../../plugins/v-context-menu';
+import { isDef } from '../../scripts/basic';
 import {
     IDirectory, IFileSystem,
 } from '../../scripts/fs';
@@ -30,7 +31,7 @@ import { ascendingOrderAndSavePostiion } from '../../scripts/iconUtils';
 import { rootInjectKey } from '../../scripts/injectKeys';
 import { notifyNeg } from '../../scripts/notify';
 import { IPosition, PIDType, ShapeType } from '../../scripts/types';
-import { CLIPBOARD_IDS, elementShape, isDef } from '../../scripts/utils';
+import { CLIPBOARD_IDS, elementShape } from '../../scripts/utils';
 import useIcons from '../../stores/icons';
 import useLocalClipboard from '../../stores/localClipboard';
 import useWindowManager from '../../stores/windowManager';

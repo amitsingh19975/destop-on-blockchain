@@ -102,7 +102,7 @@ import {
     capitalize, CSSProperties, onMounted, reactive, ref, watch,
 } from 'vue';
 import ROOT, {
-    IDirectory, IFileSystem, isDir, isFile, makeDir, makeFile, NodeKind, Path,
+    IDirectory, IFileSystem, isDir, isFile, NodeKind, Path,
 } from '../scripts/fs';
 import { ShapeType } from '../scripts/types';
 import useTheme from '../stores/theme';
@@ -112,9 +112,7 @@ import VTitleBtn from './window/VTitleBtn.vue';
 import VMenuItem from './VMenuItem.vue';
 import ListView from './filemanager/ListView.vue';
 import { FileManager } from '../scripts/fileManager';
-import { isDef } from '../scripts/utils';
-import useIcons from '../stores/icons';
-import VIcon from './VIcon.vue';
+import { isDef } from '../scripts/basic';
 import VNewFile from './VNewFile.vue';
 
 type PatternType = RegExp | string;

@@ -55,16 +55,22 @@ const asset_entry = path.join(workspace, "index.html");
 
 module.exports = {
     target: "web",
-    mode: isDevelopment ? "development" : "production",
     entry: {
-        // The frontend.entrypoint points to the HTML file for this build, so we need
-        // to replace the extension to `.js`.
         index: path.join(__dirname, asset_entry).replace(/\.html$/, ".ts"),
+        // dfx: path.join(__dirname, workspace, "scripts", "dfx", "index.ts"),
+        // worker: path.join(__dirname, workspace, 'scripts', 'sw', 'canister.worker.ts'),
     },
+    output: {
+        filename: "[name].js",
+        path: path.join(__dirname, "dist", frontendDirectory),
+    },
+
+    mode: isDevelopment ? "development" : "production",
     devtool: isDevelopment ? "source-map" : false,
     optimization: {
         minimize: !isDevelopment,
         minimizer: [new TerserPlugin()],
+        // runtimeChunk: true,
     },
     resolve: {
         extensions: [".js", ".ts", ".jsx", ".tsx"],
@@ -79,16 +85,38 @@ module.exports = {
             '@': __dirname,
         },
     },
-    output: {
-        filename: "[name].js",
-        path: path.join(__dirname, "dist", frontendDirectory),
-    },
 
-    // Depending in the language or framework you are using for
-    // front-end development, add module loaders to the default
-    // webpack configuration. For example, if you are using React
-    // modules and CSS as described in the "Adding a stylesheet"
-    // tutorial, uncomment the following lines:
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: path.join(__dirname, asset_entry),
+            cache: false,
+        }),
+        new CopyPlugin({
+            patterns: [{
+                from: path.join(__dirname, "src", frontendDirectory, "assets"),
+                to: path.join(__dirname, "dist", frontendDirectory),
+            },],
+        }),
+        new webpack.EnvironmentPlugin({
+            NODE_ENV: "development",
+            ...canisterEnvVariables,
+        }),
+        new webpack.ProvidePlugin({
+            Buffer: [require.resolve("buffer/"), "Buffer"],
+            process: require.resolve("process/browser"),
+        }),
+        new VueLoaderPlugin(),
+        new Dotenv({
+            path: path.join(__dirname, '.env'),
+            systemvars: true,
+        }),
+        new webpack.DefinePlugin({
+            __VUE_OPTIONS_API__: true,
+            __VUE_PROD_DEVTOOLS__: isDevelopment,
+        }),
+
+    ],
+
     module: {
         rules: [{
             test: /.vue$/,
@@ -121,37 +149,7 @@ module.exports = {
         },
         ]
     },
-    plugins: [
-        new HtmlWebpackPlugin({
-            template: path.join(__dirname, asset_entry),
-            cache: false,
-        }),
-        new CopyPlugin({
-            patterns: [{
-                from: path.join(__dirname, "src", frontendDirectory, "assets"),
-                to: path.join(__dirname, "dist", frontendDirectory),
-            },],
-        }),
-        new webpack.EnvironmentPlugin({
-            NODE_ENV: "development",
-            ...canisterEnvVariables,
-        }),
-        new webpack.ProvidePlugin({
-            Buffer: [require.resolve("buffer/"), "Buffer"],
-            process: require.resolve("process/browser"),
-        }),
-        new VueLoaderPlugin(),
-        new Dotenv({
-            path: path.join(__dirname, '.env'),
-            systemvars: true,
-        }),
-        new webpack.DefinePlugin({
-            __VUE_OPTIONS_API__: true,
-            __VUE_PROD_DEVTOOLS__: isDevelopment,
-        }),
 
-    ],
-    // proxy /api to port 8000 during development
     devServer: {
         proxy: {
             "/api": {

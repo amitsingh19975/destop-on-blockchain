@@ -16,13 +16,13 @@ import {
 import {
     addVariationToPosition,
     HTMLElementFromVueRef,
-    isDef,
     windowPosition,
 } from '../scripts/utils';
 import useProcess from './process';
 import useEvent from './events';
 import MainApp from '..';
 import { ComponentType, registeredComponentName } from '../windowApp';
+import { isDef } from '../scripts/basic';
 
 const { width: vW, height: vH } = dom;
 

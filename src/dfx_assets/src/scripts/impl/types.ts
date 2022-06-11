@@ -14,15 +14,17 @@ export interface ICanisterFetchChunkPayload {
     chunkId: ChunkId;
 }
 
+export type GetCanisterPayloadType<K extends CanisterMethodType> =
+    K extends 'addAssetChunk' ? ICanisterAddChunkPayload : K extends 'fetchAssetChunk' ? ICanisterFetchChunkPayload : never;
+
 export type CanisterMessageType = {
     method: 'addAssetChunk';
-    payload: ICanisterAddChunkPayload;
+    payload: GetCanisterPayloadType<'addAssetChunk'>;
 } | {
     method: 'fetchAssetChunk';
-    payload: ICanisterFetchChunkPayload;
+    payload: GetCanisterPayloadType<'fetchAssetChunk'>;
 } | {
     method: 'cancelAllPendingTask';
-    payload: ICanisterFetchChunkPayload;
 };
 
 export type ResponseErrorType = 'canister' | 'preprocess' | 'queue';
@@ -53,6 +55,9 @@ export type CanisterCancelAllTaskResponseType = {
         method: 'cancelAllPendingTask',
     }
 };
+
+export type GetCanisterResponseType<K extends CanisterMethodType> = K extends 'addAssetChunk'
+    ? CanisterAddAssetChunkResponseType : K extends 'fetchAssetChunk' ? CanisterFetchAssetChunkResponseType : CanisterCancelAllTaskResponseType;
 
 export type CanisterResponseType =
     | CanisterAddAssetChunkResponseType

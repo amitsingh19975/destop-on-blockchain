@@ -1,7 +1,0 @@
-{
-    "extends": "../../../tsconfig.json",
-    "compilerOptions": {
-        "lib": ["DOM", "WebWorker"],
-    },
-    "include": ["*.ts", "*.d.ts"],
-}

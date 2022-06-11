@@ -1,5 +1,5 @@
 import { uid } from 'quasar';
-import { checkKeys, GenericObjType, isDef } from '../utils';
+import { checkKeys, GenericObjType, isDef } from '../basic';
 import {
     getFileComponent,
     IComponent,

@@ -29,7 +29,7 @@ export default {
 
 <script setup lang="ts">
 import {
-    computed, PropType, ref, watch,
+    computed, PropType, ref,
 } from 'vue';
 import { NodeKind, makeDir, makeFile } from '../scripts/fs';
 import type { IDirectory } from '../scripts/fs';

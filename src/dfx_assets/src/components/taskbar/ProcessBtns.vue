@@ -20,7 +20,8 @@ import { reactive } from 'vue';
 import ProcessBtn from './ProcessBtn.vue';
 import useWindowManager from '../../stores/windowManager';
 import { PIDType } from '../../scripts/types';
-import { isDef, processSnapshot } from '../../scripts/utils';
+import { didTimeExpired, processSnapshot } from '../../scripts/utils';
+import { isDef } from '../../scripts/basic';
 
 const { process, indices } = storeToRefs(useWindowManager());
 const { changePositionForIndices, focusOn } = useWindowManager();
@@ -36,15 +37,10 @@ const handleClick = (pid: PIDType) => {
     focusOn('window', pid);
 };
 
-const checkIfXAmountOfTimePassed = (x: number, unit: 'min' | 'sec' | 'hour', a: number) => {
-    const factor = (unit === 'min' ? 60 : (unit === 'hour' ? 60 * 60 : 1)) * 1000;
-    return (Date.now() - a) > x * factor;
-};
-
 const fetchSnapshot = async (pid: PIDType) => {
     if (pid in snapshots) {
         const [_, time] = snapshots[pid];
-        if (!checkIfXAmountOfTimePassed(3, 'sec', time)) return;
+        if (!didTimeExpired(3, 'sec', time)) return;
     }
     const res = await processSnapshot(pid);
 

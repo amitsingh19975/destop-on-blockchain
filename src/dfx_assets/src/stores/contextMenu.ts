@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
-import { copyToClipboard, QList, QMenu } from 'quasar';
+import { copyToClipboard, QList } from 'quasar';
 import { computed, ref } from 'vue';
+import { isDef } from '../scripts/basic';
 import { notifyNeg } from '../scripts/notify';
-import { IActionValue, PIDType, VueHTMLElementType } from '../scripts/types';
+import { IActionValue, PIDType } from '../scripts/types';
 import {
-    isDef, isEditable, isInputElement, isTextAreaElement,
+    isEditable, isInputElement, isTextAreaElement,
 } from '../scripts/utils';
 
 interface IContextMenu {

@@ -14,13 +14,12 @@ import videojs from 'video.js';
 import BaseWindowComp from '../scripts/baseWindowComp';
 import useIcons from '../stores/icons';
 import { IDirectory, IFile, IFileSystem } from '../scripts/fs';
-import {
-    elementShape,
-    isDef, loadMedia,
-} from '../scripts/utils';
+import { elementShape } from '../scripts/utils';
 import useExtMapping from '../stores/extMapping';
 import { DefaultVideoExt, ShapeType } from '../scripts/types';
 import { IContextMenuBindingArgs } from '../plugins/v-context-menu';
+import { loadMedia } from '../scripts/mediaUtils';
+import { isDef } from '../scripts/basic';
 
 export default defineComponent({
     name: 'AppVideoViewer',

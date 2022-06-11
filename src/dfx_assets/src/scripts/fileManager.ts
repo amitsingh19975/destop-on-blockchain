@@ -6,7 +6,7 @@ import {
 import { notifyInfo } from './notify';
 import { readFile } from './storage';
 import { WinApp } from './types';
-import { isDef } from './utils';
+import { isDef } from './basic';
 
 export namespace FileManager {
 
@@ -69,7 +69,7 @@ export namespace FileManager {
                 notifyInfo(`No suitable app found for the extenstion="${file.ext}"`);
                 return { level, curDir };
             }
-            const data = await readFile<WinApp>({ node: file });
+            const data = await readFile<'generic', WinApp>({ node: file });
             const winName = data?.name || app;
             makeWindow({
                 name: winName,

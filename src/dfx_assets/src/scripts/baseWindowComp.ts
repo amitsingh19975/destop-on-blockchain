@@ -8,13 +8,14 @@ import {
     IActionValue,
     IIcon, IProcess, IWindow, PIDType, ShapeType,
 } from './types';
-import { capitalize, isDef } from './utils';
+import { capitalize } from './utils';
 import VDialogBox from '../components/VDialogBox.vue';
 import {
     asDir, asFile, findChild, IDirectory, IFile, IFileSystem, isFile,
 } from './fs';
 import { notifyNeg } from './notify';
 import VFilePicker from '../components/VFilePicker.vue';
+import { isDef } from './basic';
 
 declare module 'vue' {
     interface ComponentCustomProperties {

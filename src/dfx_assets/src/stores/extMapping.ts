@@ -79,7 +79,7 @@ const useExtMapping = defineStore('useExtMappingStore', {
 
             if (ext === 'app') {
                 if (_uid in map) return iconMapping(map, _uid);
-                const { icon, meta } = await readFile<WinApp>({ node }) || {};
+                const { icon, meta } = await readFile<'generic', WinApp>({ node }) || {};
                 if (typeof icon !== 'undefined') {
                     const comp = meta?.builtin?.component;
                     if (typeof icon === 'string') {
@@ -100,7 +100,7 @@ const useExtMapping = defineStore('useExtMappingStore', {
 
             if (ext === 'app') {
                 if (_uid in map) return map[_uid].component;
-                const { meta = {} } = await readFile<WinApp>({ node }) || {};
+                const { meta = {} } = await readFile<'generic', WinApp>({ node }) || {};
                 if (typeof meta.builtin !== 'undefined') {
                     return meta.builtin.component;
                 }

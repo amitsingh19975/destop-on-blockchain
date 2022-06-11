@@ -12,12 +12,11 @@ import { defineComponent, ref } from 'vue';
 import BaseWindowComp from '../scripts/baseWindowComp';
 import useIcons from '../stores/icons';
 import { IDirectory, IFile, IFileSystem } from '../scripts/fs';
-import {
-    isDef, loadMedia,
-} from '../scripts/utils';
+import { isDef } from '../scripts/basic';
 import useExtMapping from '../stores/extMapping';
 import { DefaultImageExt, ShapeType } from '../scripts/types';
 import { IContextMenuBindingArgs } from '../plugins/v-context-menu';
+import { loadMedia } from '../scripts/mediaUtils';
 
 export default defineComponent({
     name: 'AppImageViewer',

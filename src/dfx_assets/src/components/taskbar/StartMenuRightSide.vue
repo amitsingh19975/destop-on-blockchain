@@ -32,7 +32,7 @@ export default {
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { isDef } from '../../scripts/utils';
+import { isDef } from '../../scripts/basic';
 import useIcons from '../../stores/icons';
 import useWindowManager from '../../stores/windowManager';
 import { ComponentType, getAllApps } from '../../windowApp';

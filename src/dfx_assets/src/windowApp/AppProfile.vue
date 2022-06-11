@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, ref } from 'vue';
+import { defineComponent, ref } from 'vue';
 import { mapState } from 'pinia';
 import baseWindowComp from '../scripts/baseWindowComp';
 import VBtn from '../components/VBtn.vue';

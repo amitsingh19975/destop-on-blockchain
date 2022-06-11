@@ -1,86 +1,101 @@
-import CacheManager, {
-    CanisterCommitCallbackType, ErrCallbackType, LocalCommitCompletionCallbackType, WriteType,
-} from './cacheManager';
-import { AcceptableType } from './canisterHelper';
+import { CacheManager, CanisterAssetCommitCallbackType, LocalAssetCommitCallbackType } from './cacheManager';
+import { AcceptableType, Type, UIDType } from './canisterHelper';
 import {
     IDirectory, IFile, makeFileUsingPath, Path, propogateSize,
 } from './fs';
 
-import { addCanisterEvent, removeCanisterEvent } from './events';
+type ErrorCallbackType = (error: unknown) => void;
 
-const gCacheManager: CacheManager = new CacheManager();
+export type WriteType =
+    'append'
+    | 'overwrite'
+    | 'prepend';
 
-interface IOpenFileArgs<T extends AcceptableType> {
-    def: T,
+interface ICommitCallbacks {
+    canisterCommitCallback?: CanisterAssetCommitCallbackType,
+    localCommitCompletionCallback?: LocalAssetCommitCallbackType,
+}
+
+interface IOpenFileArgs<T extends Type> extends ICommitCallbacks {
+    type?: T,
     root?: IDirectory,
     curDir?: IDirectory,
     path?: string | string[],
     node?: IFile,
-    create?: boolean,
-    errCallback?: ErrCallbackType,
+    createIfRequired?: boolean,
 }
 
-interface IReadFileArgs {
+interface IReadFileArgs<T extends Type> extends ICommitCallbacks {
     node?: IFile,
     uid?: string,
-    errCallback?: ErrCallbackType,
     createIfRequired?: boolean,
-    def?: AcceptableType,
+    type?: T,
 }
 
-interface IWriteFileArgs<T extends AcceptableType> extends IReadFileArgs {
+interface IWriteFileArgs<T extends AcceptableType> extends ICommitCallbacks {
+    node?: IFile,
+    uid?: string,
     mode?: WriteType,
     data: T,
-    lazy?: boolean,
-    timeout?: number,
-    errCallback?: ErrCallbackType,
-    canisterCommitCallback?: CanisterCommitCallbackType,
-    localCommitCompletionCallback?: LocalCommitCompletionCallbackType,
 }
 
-export const readFile = async <T extends AcceptableType>(
+export const readFile = async <T extends Type, R = unknown>(
     {
-        node, uid, errCallback, createIfRequired, def,
-    }: IReadFileArgs,
-): Promise<T | undefined> => {
+        node, uid, createIfRequired, type,
+        localCommitCompletionCallback, canisterCommitCallback,
+    }: IReadFileArgs<T>,
+) => {
     const tempUID = node?._uid || uid;
     if (typeof tempUID === 'undefined') {
-        errCallback?.(new Error('[readFile]: unknown file; please provide a node or a uid'));
+        localCommitCompletionCallback?.({ error: new Error('[readFile]: unknown file; please provide a node or a uid') });
         return undefined;
     }
-    return gCacheManager.get(node?.name || '?', tempUID, { errCallback, createIfRequired, def }) as Promise<T | undefined>;
+    try {
+        return CacheManager.get<T, R>(tempUID, node?.name || '?', {
+            createIfRequired,
+            type,
+            assetCommitCallbacks: {
+                localCallback: localCommitCompletionCallback,
+                canisterCallback: canisterCommitCallback,
+            },
+        });
+    } catch (e) {
+        if (localCommitCompletionCallback) localCommitCompletionCallback({ error: e });
+        else throw e;
+    }
+    return undefined;
 };
 
 export const writeFile = async <T extends AcceptableType>(
     {
-        node, uid, errCallback, data, mode,
-        lazy, timeout, canisterCommitCallback, localCommitCompletionCallback,
+        node, uid, data, mode, canisterCommitCallback, localCommitCompletionCallback,
     }: IWriteFileArgs<T>,
 ): Promise<void> => {
     const tempUID = node?._uid || uid;
     if (typeof tempUID === 'undefined') {
-        errCallback?.(new Error('[writeFile]: unknown file; please provide a node or a uid'));
+        canisterCommitCallback?.({ error: new Error('[writeFile]: unknown file; please provide a node or a uid') });
         return;
     }
 
-    gCacheManager.set(node?.name || '?', tempUID, data, {
+    CacheManager.put(tempUID, node?.name || '?', data, {
+        assetCommitCallbacks: {
+            localCallback: localCommitCompletionCallback,
+            canisterCallback: canisterCommitCallback,
+        },
+        sizeCallback: (size) => propogateSize(size, node),
         mode,
-        lazy,
-        timeout,
-        canisterCommitCallback,
-        localCommitCompletionCallback,
-    }).then((size) => propogateSize(size, node));
+    });
 };
 
-export const openFile = async <T extends AcceptableType>(
+export const openFile = async <T extends Type, R = unknown>(
     args: IOpenFileArgs<T>,
 ): Promise<IFile | undefined> => {
     const {
-        node, root, curDir, path, errCallback, def,
-        create,
+        node, root, curDir, path, type,
+        createIfRequired, localCommitCompletionCallback, canisterCommitCallback,
     } = args;
     if (typeof node === 'undefined' && typeof path === 'undefined') {
-        errCallback?.(new Error('[readFile]: unknown file; please provide a node'));
+        localCommitCompletionCallback?.({ error: new Error('[readFile]: unknown file; please provide a node') });
         return undefined;
     }
 
@@ -88,9 +103,11 @@ export const openFile = async <T extends AcceptableType>(
 
     if (path && !node) {
         res = Path.fsFromPath('File', path, { curDir, root });
-        if (!res && create) {
+        if (!res && createIfRequired) {
             res = makeFileUsingPath(path, { curDir, root });
-            writeFile<T>({ node: res, errCallback, data: def });
+            readFile<T, R>({
+                node: res, type, createIfRequired: true, localCommitCompletionCallback, canisterCommitCallback,
+            });
         }
     }
 
@@ -98,12 +115,5 @@ export const openFile = async <T extends AcceptableType>(
 };
 
 export const commitAll = async (
-    errCallback?: ErrCallbackType,
-) => gCacheManager.commitAll(errCallback);
-
-export const forceCommit = async (
-    uid: string,
-    errCallback?: ErrCallbackType,
-) => gCacheManager.forceCommit(uid, errCallback);
-
-export { addCanisterEvent, removeCanisterEvent };
+    errCallback?: ErrorCallbackType,
+) => CacheManager.commitAllIfDataIsDirty(errCallback);

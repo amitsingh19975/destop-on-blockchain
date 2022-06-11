@@ -3,8 +3,9 @@ import {
     asDir,
     findChild, IDirectory, IFileSystem, isDir, isFile, makeDir, makeFile, NodeKind, Path, removeAllChildren,
 } from '.';
+import { AcceptableType } from '../canisterHelper';
 import { readFile, writeFile } from '../storage';
-import { isDef } from '../utils';
+import { isDef } from '../basic';
 import { makeFsId } from './utils';
 
 export const renameFsNode = (node: IFileSystem, name: string): Error | undefined => {
@@ -40,7 +41,7 @@ const cloneNode = async (node: IFileSystem, parent?: IDirectory): Promise<IFileS
             size: node.size,
             useNameToGetExt: true,
         }, parent);
-        const fileContent = await readFile({ node });
+        const fileContent = await readFile<'generic', AcceptableType>({ node });
         if (isDef(fileContent)) await writeFile({ node: temp, data: fileContent });
         return temp;
     }

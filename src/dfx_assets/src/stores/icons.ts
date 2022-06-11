@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 
 import { IIcon } from '../scripts/types';
-import { isDef } from '../scripts/utils';
+import { isDef } from '../scripts/basic';
 import { ComponentType } from '../windowApp';
 
 interface IFileSystemIcons extends Record<string, IIcon> {

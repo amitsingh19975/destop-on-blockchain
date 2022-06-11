@@ -1,4 +1,4 @@
-import { PIDType } from "./types";
+import { PIDType } from './types';
 
 export default class PidGen {
     private _freeIds = [] as PIDType[];

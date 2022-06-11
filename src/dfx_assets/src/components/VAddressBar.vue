@@ -25,8 +25,9 @@ import {
     computed, StyleValue, normalizeClass, normalizeStyle, ref, watch, nextTick, shallowReactive, onMounted, onUnmounted, onBeforeUpdate, getCurrentInstance,
 } from 'vue';
 import { IClickOutsideBindingArgs } from '../plugins/v-click-outside';
+import { isDef } from '../scripts/basic';
 import { ClassType } from '../scripts/types';
-import { getCaretCharacterOffsetWithin, HTMLElementFromVueRef, isDef } from '../scripts/utils';
+import { getCaretCharacterOffsetWithin, HTMLElementFromVueRef } from '../scripts/utils';
 import useContextMenu from '../stores/contextMenu';
 import useTheme from '../stores/theme';
 
