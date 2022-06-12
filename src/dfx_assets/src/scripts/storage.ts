@@ -1,8 +1,10 @@
+import { isDef } from './basic';
 import { CacheManager, CanisterAssetCommitCallbackType, LocalAssetCommitCallbackType } from './cacheManager';
 import { AcceptableType, Type, UIDType } from './canisterHelper';
 import {
-    IDirectory, IFile, makeFileUsingPath, Path, propogateSize,
+    IDirectory, IFile, IFileSystem, isDir, isFile, makeFileUsingPath, Path, propogateSize, removeChild,
 } from './fs';
+import { makeFsId } from './fs/utils';
 
 type ErrorCallbackType = (error: unknown) => void;
 
@@ -117,3 +119,25 @@ export const openFile = async <T extends Type, R = unknown>(
 export const commitAll = async (
     errCallback?: ErrorCallbackType,
 ) => CacheManager.commitAllIfDataIsDirty(errCallback);
+
+export const removeFSNode = async (node: IFileSystem) => {
+    const parent = node.parent as IDirectory | undefined;
+
+    if (isFile(node)) {
+        await CacheManager.remove(node._uid);
+    } else if (isDir(node)) {
+        const promises = [] as Promise<void>[];
+        Object.values(node._children).forEach((n) => {
+            promises.push(removeFSNode(n));
+        });
+        await Promise.all(promises);
+    }
+
+    if (!isDef(parent)) return;
+    const id = makeFsId(node);
+    node.parent = undefined;
+
+    if (id in parent._children) {
+        delete parent._children[id];
+    }
+};

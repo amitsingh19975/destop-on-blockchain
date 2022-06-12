@@ -1,6 +1,5 @@
 // import { dfx } from "../../declarations/dfx";
 import { Quasar } from 'quasar';
-import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import Router from './router';
 import QuasarPlugin from './plugins/quasar';
@@ -13,9 +12,9 @@ import { notifyNeg } from './scripts/notify';
 import registerWinApp from './windowApp';
 import VContextMenu from './plugins/v-context-menu';
 import 'video.js/dist/video-js.css';
+import pinia from './stores';
 
 const app = createApp(App);
-const pinia = createPinia();
 app.use(Quasar, QuasarPlugin);
 
 pinia.use(piniaError(

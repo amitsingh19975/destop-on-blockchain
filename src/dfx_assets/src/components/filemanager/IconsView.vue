@@ -116,7 +116,7 @@ const iconRearrange = async () => {
         if (typeof iconRef === 'undefined') return;
         const { itemSize = { width: 0, height: 0 } } = iconRef;
         Object.assign(iconShape, itemSize);
-        await ascendingOrderAndSavePostiion(props.direction || 'row', positions, props.items, iconShape, parentShape(), 'icon.json', root);
+        await ascendingOrderAndSavePostiion(props.direction || 'row', positions, props.items, iconShape, parentShape());
     });
 };
 

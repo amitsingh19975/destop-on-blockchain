@@ -8,6 +8,7 @@ import Nat "mo:base/Nat";
 import Nat8 "mo:base/Nat8";
 import Blob "mo:base/Blob";
 import Buffer "mo:base/Buffer";
+import Debug "mo:base/Debug";
 import Types "types";
 
 module {
@@ -74,19 +75,33 @@ module {
             }
         };
 
-        // public func showAll() : [(Text, {info: Types.ContentInfo; buffer: [?Types.ContentChunk]})] {
-        //     let arr = Buffer.Buffer<(Text, {info: Types.ContentInfo; buffer: [?Types.ContentChunk]})>(mStreaming.size());
-        //     for ((uid, { info; buffer }) in mStreaming.entries()) {
-        //         arr.add((
-        //             uid,
-        //             {
-        //                 info = info;
-        //                 buffer = Array.freeze(buffer);
-        //             }
-        //         ));
-        //     };
-        //     return arr.toArray();
-        // };
+        public func showAllInTempBuffer() : [(Text, {info: Types.ContentInfo; buffer: [?Types.ContentChunk]})] {
+            let arr = Buffer.Buffer<(Text, {info: Types.ContentInfo; buffer: [?Types.ContentChunk]})>(mStreaming.size());
+            for ((uid, { info; buffer }) in mStreaming.entries()) {
+                arr.add((
+                    uid,
+                    {
+                        info = info;
+                        buffer = Array.freeze(buffer);
+                    }
+                ));
+            };
+            return arr.toArray();
+        };
+
+        public func showAllInPermBuffer() : [(Text, {info: Types.ContentInfo; buffer: [Types.ContentChunk]})] {
+            let arr = Buffer.Buffer<(Text, {info: Types.ContentInfo; buffer: [Types.ContentChunk]})>(mStreaming.size());
+            for ((uid, { info; buffer }) in mUidToInternalContent.entries()) {
+                arr.add((
+                    uid,
+                    {
+                        info = info;
+                        buffer = buffer;
+                    }
+                ));
+            };
+            return arr.toArray();
+        };
 
         public func commit(caller: Principal, uid: Types.UidType): Result<()> {
             let newUid = Principal.toText(caller) # uid;

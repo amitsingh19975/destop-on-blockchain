@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts">
-import { mapActions, mapState } from 'pinia';
+import { mapActions, mapState, storeToRefs } from 'pinia';
 import {
     CSSProperties, defineComponent, provide, ref,
 } from 'vue';
@@ -18,19 +18,13 @@ import useLoader from '../stores/loader';
 import TheWindows from '../components/TheWindows.vue';
 import useWindowManager from '../stores/windowManager';
 import VDesktop from '../components/VDesktop.vue';
-import ROOT, {
-    IDirectory, makeFile,
-} from '../scripts/fs';
 import useTheme from '../stores/theme';
-import { rootInjectKey } from '../scripts/injectKeys';
-import { writeFile } from '../scripts/storage';
 import VContextMenu from '../components/VContextMenu.vue';
-import { IIcon, MediaType, WinApp } from '../scripts/types';
 import VDroppable from '../components/VDroppable.vue';
 import { isDef } from '../scripts/basic';
 import { saveFileToAccount } from '../scripts/mediaUtils';
-import { IContextMenuBindingArgs } from '../plugins/v-context-menu';
-import { populateUsers } from '../scripts/canisterDummyData';
+import { rootInjectKey } from '../scripts/injectKeys';
+import useUser from '../stores/user';
 
 export default defineComponent({
     name: 'HomeView',
@@ -41,12 +35,11 @@ export default defineComponent({
         VDroppable,
     },
     setup() {
-        const root = ref<IDirectory>(ROOT);
-        provide(rootInjectKey, root.value);
         const desktopRef = ref<InstanceType<typeof VDesktop> | null>(null);
         const theWindowRef = ref<InstanceType<typeof TheWindows> | null>(null);
+        const { root } = storeToRefs(useUser());
+        provide(rootInjectKey, root.value);
         return {
-            root,
             contextMenuToggle: ref(true),
             desktopRef,
             theWindowRef,
@@ -90,7 +83,7 @@ export default defineComponent({
         // }
 
         this.initWindowManager(this.$el);
-        await populateUsers(this.root);
+        // await populateUsers(this.root);
         // makeDir({ name: 'user' }, this.root);
         // makeDir({ name: 'user1' }, this.root);
         // makeDir({ name: 'user2' }, this.root);

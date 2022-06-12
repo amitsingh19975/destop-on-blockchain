@@ -8,7 +8,7 @@
 
 <script setup lang="ts">
 import {
-    computed, ref, shallowRef,
+    computed, ref, shallowRef, toRef,
 } from 'vue';
 import { IContextMenuBindingArgs } from '../plugins/v-context-menu';
 import { FileManager } from '../scripts/fileManager';
@@ -29,7 +29,7 @@ interface IProps {
 }
 
 const props = defineProps<IProps>();
-const curDir = shallowRef(props.root);
+const curDir = toRef(props, 'root');
 const children = computed(() => curDir.value._children);
 const iconViewRef = ref<InstanceType<typeof IconsView> | null>(null);
 const newFileType = ref<NodeKind | 'None'>('None');

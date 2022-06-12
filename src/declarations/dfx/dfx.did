@@ -50,6 +50,16 @@ type Error =
    userAlreadyExists: text;
    userDoesnotExist: text;
  };
+type DebugUserInfo = 
+ record {
+   fileSystem: text;
+   "principal": principal;
+   settings: vec record {
+                   UidType;
+                   text;
+                 };
+   userInfo: UserInfo;
+ };
 type DataType = text;
 type ContentInfo = 
  record {
@@ -79,6 +89,24 @@ service : {
   fetchUserInfo: () -> (Result_1) query;
   initiateAssetUpload: (ContentInfo, opt bool) -> (Result);
   reset: () -> ();
+  showAllInAssetPermBuffer: () ->
+   (vec record {
+          text;
+          record {
+            buffer: vec ContentChunk;
+            info: ContentInfo;
+          };
+        }) query;
+  showAllInAssetTempBuffer: () ->
+   (vec
+     record {
+       text;
+       record {
+         buffer: vec opt ContentChunk;
+         info: ContentInfo;
+       };
+     }) query;
+  showAllUsers: () -> (vec DebugUserInfo) query;
   updateFileSystem: (SerializedJsonType) -> (Result);
   updateSetting: (UidType, SerializedJsonType) -> (Result);
 }

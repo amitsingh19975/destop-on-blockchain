@@ -54,30 +54,9 @@ export const ascendingOrderAndSavePostiion = async (
     children: Record<string, IFileSystem>,
     iconShape: ShapeType,
     viewBox: ShapeType,
-    configFileName: string,
-    root?: IDirectory,
 ) => {
-    const fileNode = await openFile<'generic', IIconPositionType>({
-        root, path: ['conf', 'Test', configFileName], create: true,
-    });
-
-    const file = fileNode && await readFile<'generic', IIconPositionType>({ node: fileNode });
     const childrenNodes = Object.values(children);
     if (childrenNodes.length === 0) return;
 
-    // if (file) { }
-
     ascendingOrder(direction, out, childrenNodes, iconShape, viewBox);
-
-    if (file) {
-        writeFile<IIconPositionType>({
-            node: fileNode,
-            data: out,
-            localCommitCompletionCallback: (args) => {
-                if ('error' in args) {
-                    console.error(args.error);
-                }
-            },
-        });
-    }
 };

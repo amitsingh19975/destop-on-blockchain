@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { GenericObjType } from '../scripts/basic';
 import { IFile, IFileSystem, isFile } from '../scripts/fs';
 import { readFile } from '../scripts/storage';
 import { IIcon, WinApp } from '../scripts/types';
@@ -40,6 +41,12 @@ const useExtMapping = defineStore('useExtMappingStore', {
             ({ map }) => (ext: ExtMappingKeyType): IIcon => getIconHelper(map, ext),
     },
     actions: {
+        serialize(): GenericObjType {
+            return this.map;
+        },
+        deserialize(data: GenericObjType): void {
+            Object.assign(this.map, data);
+        },
         addMapping(ext: ExtMappingKeyType, icon: string, component?: ComponentType): void {
             this.map[ext] = {
                 icon,

@@ -1,10 +1,11 @@
+import Assets "assets";
+import HashMap "mo:base/HashMap";
+import Iter "mo:base/Iter";
+import Option "mo:base/Option";
 import Principal "mo:base/Principal";
+import Result "mo:base/Result";
 import Text "mo:base/Text";
 import Trie "mo:base/Trie";
-import Result "mo:base/Result";
-import Option "mo:base/Option";
-import HashMap "mo:base/HashMap";
-import Assets "assets";
 import Types "types";
 
 actor OperatingSystem{
@@ -39,9 +40,13 @@ actor OperatingSystem{
         mAssets.fetchByChunkId(caller, uid, chunkId)
     };
 
-    // public query func showAll(): async [(Text, {info: Types.ContentInfo; buffer: [?Types.ContentChunk]})] {
-    //     mAssets.showAll()
-    // };
+    public query func showAllInAssetTempBuffer(): async [(Text, {info: Types.ContentInfo; buffer: [?Types.ContentChunk]})] {
+        mAssets.showAllInTempBuffer()
+    };
+
+    public query func showAllInAssetPermBuffer(): async [(Text, {info: Types.ContentInfo; buffer: [Types.ContentChunk]})] {
+        mAssets.showAllInPermBuffer()
+    };
 
     class User(uidArg: Types.UidType, userInfoArg: Types.UserInfo, fileSystemArg: Types.SerializedJsonType, settingsArgs: Types.Settings) {
         public let uid: Types.UidType = uidArg;
@@ -60,6 +65,26 @@ actor OperatingSystem{
         mUsersMapping:= Trie.empty();
         mAssets.reset();
         return ();
+    };
+
+    type DebugUserInfo = {
+        principal: Principal;
+        userInfo: Types.UserInfo;
+        fileSystem: Text;
+        settings: [(Types.UidType, Text)];
+    };
+
+    public query func showAllUsers(): async [DebugUserInfo] {
+        let iter = Trie.iter(mUsersMapping);
+        let normalizedData = Iter.map(iter, func ((k: Principal, v: User)): DebugUserInfo {
+            {
+                principal = k;
+                userInfo = v.userInfo;
+                fileSystem = v.fileSystem;
+                settings = Iter.toArray(v.settings.entries());
+            }
+        });
+        return Iter.toArray(normalizedData);
     };
 
     func createUserMapping(caller: Principal, user: User): Result<()> {

@@ -1,14 +1,14 @@
 <template>
     <span class="fit user">
-        <v-icon class="user-avatar" font-size="100%" :icon="profileAvatar || 'account_circle'" size="5rem">
+        <v-icon class="user-avatar" font-size="100%" :icon="getAvatar" size="5rem">
         </v-icon>
         <div class="scroll user-info" style="z-index: 1;">
             <div class="text-caption">Account</div>
             <span class="text-h6 text-capitalize" style="padding-left: 10px">
-                {{ firstName }} {{ lastName }}
+                {{ userInfo.firstname }} {{ userInfo.lastname }}
             </span>
         </div>
-        <q-btn class="logout-btn" flat :style="userBtnStyle">
+        <q-btn class="logout-btn" flat :style="userBtnStyle" @click="logout">
             <q-icon name="logout" left></q-icon>
             <span>Logout</span>
         </q-btn>
@@ -16,8 +16,9 @@
 </template>
 
 <script lang="ts">
-import { mapState } from 'pinia';
+import { mapActions, mapState } from 'pinia';
 import { defineComponent, StyleValue } from 'vue';
+import { IIcon } from '../../scripts/types';
 import useTheme from '../../stores/theme';
 import useUser from '../../stores/user';
 import VIcon from '../VIcon.vue';
@@ -27,7 +28,7 @@ export default defineComponent({
     components: { VIcon },
     computed: {
         ...mapState(useTheme, ['compColor', 'colors', 'getColor']),
-        ...mapState(useUser, ['firstName', 'lastName', 'profileAvatar']),
+        ...mapState(useUser, ['userInfo']),
         imgStyle(): StyleValue {
             return {
                 border: `5px solid ${this.getBgColor()}`,
@@ -39,8 +40,17 @@ export default defineComponent({
                 backgroundColor: this.getColor('negative', 30),
             };
         },
+        getAvatar(): string | IIcon {
+            const { type = 'Material', data = '' } = this.userInfo.profileAvatar || {};
+            if (data.length === 0) return 'account_circle';
+            return {
+                type,
+                data,
+            };
+        },
     },
     methods: {
+        ...mapActions(useUser, ['logout']),
         getBgColor(lightenPer?: number): string {
             return this.compColor('taskbarStartMenu', 'leftBackgroundColor', lightenPer);
         },

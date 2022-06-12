@@ -12,6 +12,12 @@ export interface ContentInfo {
   'dtype' : DataType,
 }
 export type DataType = string;
+export interface DebugUserInfo {
+  'userInfo' : UserInfo,
+  'principal' : Principal,
+  'settings' : Array<[UidType, string]>,
+  'fileSystem' : string,
+}
 export type Error = { 'assetOutOfBoundAccess' : string } |
   { 'assetCommit' : string } |
   { 'userAlreadyExists' : string } |
@@ -57,6 +63,17 @@ export interface _SERVICE {
   'fetchUserInfo' : ActorMethod<[], Result_1>,
   'initiateAssetUpload' : ActorMethod<[ContentInfo, [] | [boolean]], Result>,
   'reset' : ActorMethod<[], undefined>,
+  'showAllInAssetPermBuffer' : ActorMethod<
+    [],
+    Array<[string, { 'info' : ContentInfo, 'buffer' : Array<ContentChunk> }]>,
+  >,
+  'showAllInAssetTempBuffer' : ActorMethod<
+    [],
+    Array<
+      [string, { 'info' : ContentInfo, 'buffer' : Array<[] | [ContentChunk]> }]
+    >,
+  >,
+  'showAllUsers' : ActorMethod<[], Array<DebugUserInfo>>,
   'updateFileSystem' : ActorMethod<[SerializedJsonType], Result>,
   'updateSetting' : ActorMethod<[UidType, SerializedJsonType], Result>,
 }

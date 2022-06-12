@@ -14,9 +14,10 @@ import CanisterWorker from './impl/canisterWorker';
 import {
     GenericObjType, JsonObjectType, isDef, MAX_HARDWARE_CONCURRENCY,
 } from './basic';
+import { ItemCompletionCallbackType } from './types';
 
 const {
-    commitAssetChunk, deleteAsset, fetchAssetInfo, initiateAssetUpload,
+    commitAssetChunk, deleteAsset: deleteAssetFromCanister, fetchAssetInfo, initiateAssetUpload,
 } = dfx;
 
 export type AcceptableType = GenericObjType | string | {} | Blob;
@@ -37,26 +38,6 @@ const constructWorkerPool = (len: number): CanisterWorker[] => {
 };
 
 const CANISTER_WORKER_POOL = constructWorkerPool(MAX_HARDWARE_CONCURRENCY);
-
-// const _storedData = {} as Record<string, AcceptableType>;
-
-// export const commit = async (uid: UIDType, data: AcceptableType) => {
-//     // TODO: make API request to store data
-//     _storedData[uid] = data;
-// };
-
-// export const commitBatch = async (data: [UIDType, string][]) => {
-//     // TODO: make API request to store data
-// };
-
-// export const fetchFromCanister = async (uid: UIDType, args = { createIfRequired: false, def: {} }): Promise<AcceptableType | undefined> => {
-//     if (uid in _storedData) return _storedData[uid];
-//     if (args.createIfRequired) _storedData[uid] = args.def;
-//     return _storedData[uid];
-// };
-// export const deleteFromCanister = async (uid: UIDType): Promise<void> => {
-//     if (uid in _storedData) delete _storedData[uid];
-// };
 
 const CUSTOM_STRING_MIME_TYPE = 'amt:string' as const;
 
@@ -135,6 +116,7 @@ export const storeAssets = async (
         totalChunks: BigInt(chunks),
         dtype: type,
     };
+
     const initErr = await initiateAssetUpload(info, [overwrite]);
     handelCanisterErr(initErr);
 
@@ -162,9 +144,26 @@ export const storeAssets = async (
     handelCanisterErr(commitErr);
 };
 
-export const storeAssetsBatch = async (assets: { uid: UIDType, name: string, payload: AcceptableType }[], overwrite = false) => {
+export const storeAssetsBatch = async (
+    assets: { uid: UIDType, name: string, payload: AcceptableType }[],
+    overwrite = false,
+    itemCompletionCallback: ItemCompletionCallbackType = () => { },
+) => {
     const promises = [] as Promise<void>[];
-    assets.forEach((asset) => promises.push(storeAssets(asset.uid, asset.name, asset.payload)));
+    const set = new Set<UIDType>();
+    itemCompletionCallback({ type: 'itemEstimation', items: assets.length });
+    assets.forEach((asset) => {
+        if (set.has(asset.uid)) {
+            itemCompletionCallback({ type: 'progress' });
+            return;
+        }
+        set.add(asset.uid);
+        const fn = async () => {
+            await storeAssets(asset.uid, asset.name, asset.payload, overwrite);
+            itemCompletionCallback({ type: 'progress' });
+        };
+        promises.push(fn());
+    });
     try {
         await Promise.all(promises);
     } catch (e) {
@@ -187,7 +186,7 @@ export const fetchAsset = async (uid: UIDType): Promise<AcceptableType> => {
         const workerId = j % CANISTER_WORKER_POOL.length;
         promises.push(fetchAssetChunkThroughWorker(workerId, { chunkId, uid }, (resp) => {
             if ('error' in resp) throw new Error(resp.error.message);
-            chunks.push(resp.result.chunk.chunk);
+            chunks[Number(chunkId)] = [...resp.result.chunk.chunk];
         }));
     }
 
@@ -197,15 +196,36 @@ export const fetchAsset = async (uid: UIDType): Promise<AcceptableType> => {
     return parse({ blob: flatenedArray, type });
 };
 
-export const fetchAssetBatch = async (uids: UIDType[]): Promise<Record<UidType, AcceptableType>> => {
+export const fetchAssetBatch = async (
+    uids: UIDType[],
+    itemCompletionCallback: ItemCompletionCallbackType = () => { },
+): Promise<Record<UidType, AcceptableType>> => {
     const promises = [] as Promise<void>[];
     const res = {} as Record<UidType, AcceptableType>;
+    const set = new Set<UIDType>();
+    itemCompletionCallback({ type: 'itemEstimation', items: uids.length });
     uids.forEach((uid) => {
+        if (set.has(uid)) {
+            itemCompletionCallback({ type: 'progress' });
+            return;
+        }
+        set.add(uid);
         const runFn = async () => {
             const data = await fetchAsset(uid);
             res[uid] = data;
+            itemCompletionCallback({ type: 'progress' });
         };
         promises.push(runFn());
     });
     return res;
+};
+
+export const deleteAsset = async (uid: UIDType): Promise<Error | undefined> => {
+    const resultOr = await deleteAssetFromCanister(uid);
+    try {
+        handelCanisterErr(resultOr);
+        return undefined;
+    } catch (e) {
+        return e as Error;
+    }
 };

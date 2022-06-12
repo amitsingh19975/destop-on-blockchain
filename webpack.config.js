@@ -44,6 +44,7 @@ function initCanisterEnv() {
 }
 
 const canisterEnvVariables = initCanisterEnv();
+console.log(canisterEnvVariables);
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -100,6 +101,7 @@ module.exports = {
         new webpack.EnvironmentPlugin({
             NODE_ENV: "development",
             ...canisterEnvVariables,
+            II_CANISTER_ID: canisterEnvVariables.INTERNET_IDENTITY_CANISTER_ID,
         }),
         new webpack.ProvidePlugin({
             Buffer: [require.resolve("buffer/"), "Buffer"],

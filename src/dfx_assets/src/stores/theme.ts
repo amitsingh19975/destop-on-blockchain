@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import {
     getCssVar, setCssVar, Dark, colors,
 } from 'quasar';
+import { GenericObjType } from '../scripts/basic';
 
 type BaseColorsType = {
     primary: string;
@@ -152,6 +153,23 @@ const useTheme = defineStore('useThemeStore', {
         isDarkMode: () => Dark.isActive,
     },
     actions: {
+        _serializeHelper() {
+            return {
+                baseColors,
+                colors: this.colors,
+                images: this.images,
+            };
+        },
+        serialize(): GenericObjType {
+            return this._serializeHelper();
+        },
+        deserialize(data: GenericObjType): void {
+            const self = this;
+            const json = data as ReturnType<typeof self._serializeHelper>;
+            Object.assign(baseColors, json.baseColors);
+            Object.assign(this.colors, json.colors);
+            Object.assign(this.images, json.images);
+        },
         updateBaseColor(key: keyof BaseColorsType, color: string): void {
             if (key !== 'white' && key !== 'black') {
                 baseColors[key] = color;

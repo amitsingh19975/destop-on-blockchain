@@ -3,11 +3,12 @@
         <v-icon font-size="90%" :icon="{ type: profileAvatarType, data: profileAvatarData }" size="6rem"
             class="text-white" fallback-icon="account_circle"></v-icon>
         <div style="margin-top: 1rem; gap: 0.5rem" class="column">
-            <q-input class="bg-blue-grey-10" readonly :model-value="uid" label="UID" outlined color="white" dark>
+            <q-input class="bg-blue-grey-10" readonly :model-value="userInfo.uid" label="UID" outlined color="white"
+                dark>
             </q-input>
-            <q-input class="bg-blue-grey-10" v-model="firstName" label="Firstname" outlined color="white" dark>
+            <q-input class="bg-blue-grey-10" v-model="firstname" label="Firstname" outlined color="white" dark>
             </q-input>
-            <q-input class="bg-blue-grey-10" v-model="lastName" label="Lastname" outlined color="white" dark>
+            <q-input class="bg-blue-grey-10" v-model="lastname" label="Lastname" outlined color="white" dark>
             </q-input>
             <div class="row" style="gap:0.5rem">
                 <q-select class="bg-blue-grey-10" dark color="white" outlined v-model="profileAvatarType"
@@ -42,27 +43,27 @@ export default defineComponent({
     },
     setup() {
         const store = useUser();
-        const profileAvatarData = ref(store.profileAvatar?.data || 'account_circle');
-        const profileAvatarType = ref<typeof ICON_TYPES[number]>(store.profileAvatar?.type || 'Material');
-        const firstName = ref(store.firstName);
-        const lastName = ref(store.lastName);
+        const profileAvatarData = ref(store.userInfo.profileAvatar?.data || 'account_circle');
+        const profileAvatarType = ref<typeof ICON_TYPES[number]>(store.userInfo.profileAvatar?.type || 'Material');
+        const firstname = ref(store.userInfo.firstname);
+        const lastname = ref(store.userInfo.lastname);
         return {
             ICON_TYPES,
             profileAvatarData,
             profileAvatarType,
-            firstName,
-            lastName,
+            firstname,
+            lastname,
         };
     },
     computed: {
-        ...mapState(useUser, ['uid']),
+        ...mapState(useUser, ['userInfo']),
         options(): string[] {
             return ICON_TYPES.concat();
         },
         needsSave(): boolean {
-            const { firstName, lastName, profileAvatar } = useUser();
-            return this.firstName !== firstName
-                || this.lastName !== lastName
+            const { firstname, lastname, profileAvatar } = this.userInfo;
+            return this.firstname !== firstname
+                || this.lastname !== lastname
                 || profileAvatar?.type !== this.profileAvatarType
                 || profileAvatar?.data !== this.profileAvatarData;
         },
@@ -74,11 +75,14 @@ export default defineComponent({
         },
         save(): void {
             useUser().$patch({
-                firstName: this.firstName,
-                lastName: this.lastName,
-                profileAvatar: {
-                    type: this.profileAvatarType,
-                    data: this.profileAvatarData,
+                userInfo: {
+                    uid: this.userInfo.uid,
+                    firstname: this.firstname,
+                    lastname: this.lastname,
+                    profileAvatar: {
+                        type: this.profileAvatarType,
+                        data: this.profileAvatarData,
+                    },
                 },
             });
             this.openDialogBox('info', 'Saved successfully', {

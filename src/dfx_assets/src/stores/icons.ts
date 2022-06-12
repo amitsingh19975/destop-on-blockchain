@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 
 import { IIcon } from '../scripts/types';
-import { isDef } from '../scripts/basic';
+import { GenericObjType, isDef } from '../scripts/basic';
 import { ComponentType } from '../windowApp';
 
 interface IFileSystemIcons extends Record<string, IIcon> {
@@ -123,6 +123,12 @@ const useIcons = defineStore('useIconsStore', {
         },
         registerComponentIcon(component: ComponentType, icon: IIcon): void {
             this.icons.components[component] = icon;
+        },
+        serialize(): GenericObjType {
+            return this.icons;
+        },
+        deserialize(data: GenericObjType): void {
+            Object.assign(this.icons, data);
         },
     },
 });

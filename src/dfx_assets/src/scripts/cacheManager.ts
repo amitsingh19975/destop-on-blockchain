@@ -1,7 +1,8 @@
 import { isDef } from './basic';
 import {
-    AcceptableType, fetchAsset, storeAssets, storeAssetsBatch, Type, TypeMapping, UIDType,
+    AcceptableType, deleteAsset, fetchAsset, storeAssets, storeAssetsBatch, Type, TypeMapping, UIDType,
 } from './canisterHelper';
+import { notifyNeg } from './notify';
 import { WriteType } from './storage';
 import {
     didTimeExpired, isBlob,
@@ -50,11 +51,6 @@ const typeMismatchError = (l: AcceptableType, r: AcceptableType) => {
 export namespace CacheManager {
 
     export const inCache = (uid: UIDType) => CACHED_DATA.has(uid);
-
-    export const flush = (uid?: UIDType) => {
-        if (isDef(uid)) CACHED_DATA.delete(uid);
-        else CACHED_DATA.clear();
-    };
 
     const normalizeData = async (oldValue: AcceptableType | undefined, data: AcceptableType, mode: WriteType): Promise<AcceptableType> => {
         if (!isDef(oldValue)) return data;
@@ -247,6 +243,24 @@ export namespace CacheManager {
             if (errorCallback) errorCallback(e);
             else throw e;
         }
+    };
+
+    export const flush = async (uid?: UIDType) => {
+        if (isDef(uid)) {
+            const data = CACHED_DATA.get(uid);
+            if (!isDef(data)) return;
+            if (data.meta.isDirty) await storeAssets(uid, data.name, data.data, true);
+            CACHED_DATA.delete(uid);
+        } else {
+            await commitAllIfDataIsDirty();
+            CACHED_DATA.clear();
+        }
+    };
+
+    export const remove = async (uid: UIDType) => {
+        CACHED_DATA.delete(uid);
+        const resOr = await deleteAsset(uid);
+        notifyNeg(resOr);
     };
 }
 
