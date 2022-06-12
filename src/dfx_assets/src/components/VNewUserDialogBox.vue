@@ -5,7 +5,7 @@ export default {
 </script>
 
 <template>
-    <q-dialog :model-value="isNewUser">
+    <q-dialog :model-value="isNewUser" persistent>
         <q-card class="bg-blue-grey-8" style="width: 500px">
             <q-card-section class="column no-wrap" style="gap: 1rem">
                 <v-icon font-size="90%" :icon="getAvatar" size="6rem" class="text-white" fallback-icon="account_circle">
@@ -26,7 +26,8 @@ export default {
             </q-card-section>
             <q-card-actions align="stretch">
                 <v-btn flat border label="submit" style="width:100%; height: 4rem;" :loading="userCreationInProgress"
-                    class="bg-green text-white" @click="createNewUser" :percentage="getLoadingPercentate">
+                    class="bg-green text-white" @click="createNewUser" :percentage="getLoadingPercentate"
+                    dark-percentage>
                 </v-btn>
             </q-card-actions>
         </q-card>
@@ -44,6 +45,8 @@ import { notifyNeg } from '../scripts/notify';
 import { makeDir, makeFile } from '../scripts/fs';
 import { serializeUserSettings } from '../stores';
 import { UserInfo } from '../scripts/dfx/dfx.did.d';
+import { AcceptableType } from '../scripts/canisterHelper';
+import { images, videos, mediaJSON } from '../scripts/dummy_data/videos_images';
 
 const profileAvatarType = ref<typeof ICON_TYPES[number]>('Material');
 const profileAvatarData = ref('');
@@ -60,12 +63,13 @@ const getAvatar = computed(() => ({
     type: profileAvatarData.value.length === 0 ? 'Material' : profileAvatarType.value,
     data: profileAvatarData.value.length === 0 ? 'account_circle' : profileAvatarData.value,
 }));
-const getLoadingPercentate = computed(() => (itemsLoaded.value / totalItemsToBeLoaded));
+const getLoadingPercentate = computed(() => (itemsLoaded.value / totalItemsToBeLoaded) * 100);
 
 const constructDefaultFileSystem = () => {
     makeDir({ name: 'user' }, root.value);
-    makeDir({ name: 'desktop' }, root.value);
     makeDir({ name: 'test' }, '/desktop', { root: root.value });
+    const videosDir = makeDir({ name: 'videos' }, root.value);
+    const imagesDir = makeDir({ name: 'images' }, root.value);
 
     const text = makeFile({
         name: 'test.txt',
@@ -73,33 +77,30 @@ const constructDefaultFileSystem = () => {
     }, root.value);
 
     const music = makeFile({
-        name: 'Lofi Study',
+        name: 'Lofi Study.mp3',
         ext: 'mp3',
     }, root.value);
 
     const img = makeFile({
-        name: 'Screenshot',
+        name: 'Screenshot.png',
         ext: 'png',
     }, root.value);
 
-    const video = makeFile({
-        name: 'Crab Rave',
-        ext: 'mp4',
+    const json = makeFile({
+        name: 'media.json',
+        useNameToGetExt: true,
     }, root.value);
 
-    return [
+    const assets = [
+        {
+            uid: json._uid,
+            name: json.name,
+            payload: mediaJSON,
+        },
         {
             uid: text._uid,
             name: text.name,
             payload: 'This is an awesome TEXT EDITOR!',
-        },
-        {
-            uid: music._uid,
-            name: music.name,
-            payload: {
-                data: './music/lofi-study.mp3',
-                type: 'audio/mp3',
-            },
         },
         {
             uid: img._uid,
@@ -110,14 +111,39 @@ const constructDefaultFileSystem = () => {
             },
         },
         {
-            uid: video._uid,
-            name: video.name,
+            uid: music._uid,
+            name: music.name,
             payload: {
-                data: 'https://www.youtube.com/watch?v=LDU_Txk06tM',
-                type: 'video/mp4',
+                data: './music/lofi-study.mp3',
+                type: 'audio/mp3',
             },
         },
-    ];
+    ] as { uid: string, name: string, payload: AcceptableType }[];
+
+    images().forEach((v) => {
+        const temp = makeFile({
+            name: v.name,
+            useNameToGetExt: true,
+        }, imagesDir);
+        assets.push({
+            uid: temp._uid,
+            name: temp.name,
+            payload: v.payload,
+        });
+    });
+    videos().forEach((v) => {
+        const temp = makeFile({
+            name: v.name,
+            useNameToGetExt: true,
+        }, videosDir);
+        assets.push({
+            uid: temp._uid,
+            name: temp.name,
+            payload: v.payload,
+        });
+    });
+
+    return assets;
 };
 
 const createNewUser = async () => {
@@ -150,6 +176,8 @@ const createNewUser = async () => {
     }
 
     userCreationInProgress.value = false;
+    // eslint-disable-next-line no-restricted-globals
+    location.reload();
 };
 
 </script>

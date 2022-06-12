@@ -99,6 +99,7 @@ export const idlFactory = ({ IDL }) => {
     'showAllUsers' : IDL.Func([], [IDL.Vec(DebugUserInfo)], ['query']),
     'updateFileSystem' : IDL.Func([SerializedJsonType], [Result], []),
     'updateSetting' : IDL.Func([UidType, SerializedJsonType], [Result], []),
+    'updateUserInfo' : IDL.Func([UserInfo], [Result], []),
   });
 };
 export const init = ({ IDL }) => { return []; };

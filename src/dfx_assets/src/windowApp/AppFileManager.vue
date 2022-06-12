@@ -12,7 +12,7 @@
             </v-address-bar>
         </header>
         <main class="fit">
-            <q-splitter v-model="splitterModel" before-class="bg-blue-grey-6 full-height"
+            <q-splitter v-model="splitterModel" before-class="bg-blue-grey-6 full-height scroll"
                 after-class="relative-position no-user-select" separator-style="width: 5px"
                 separator-class="bg-blue-grey-4 shadow-4" class="fit">
 

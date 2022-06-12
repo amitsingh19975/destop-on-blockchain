@@ -89,7 +89,15 @@ service : {
   fetchUserInfo: () -> (Result_1) query;
   initiateAssetUpload: (ContentInfo, opt bool) -> (Result);
   reset: () -> ();
-  showAll: () ->
+  showAllInAssetPermBuffer: () ->
+   (vec record {
+          text;
+          record {
+            buffer: vec ContentChunk;
+            info: ContentInfo;
+          };
+        }) query;
+  showAllInAssetTempBuffer: () ->
    (vec
      record {
        text;

@@ -65,6 +65,7 @@ export const idlFactory: IIDL.InterfaceFactory = ({ IDL }) => {
         reset: IDL.Func([], [], []),
         updateFileSystem: IDL.Func([SerializedJsonType], [Result], []),
         updateSetting: IDL.Func([UidType, SerializedJsonType], [Result], []),
+        updateUserInfo: IDL.Func([UserInfo], [Result], []),
     });
 };
 export const init = ({ IDL }: { IDL: unknown }) => [];

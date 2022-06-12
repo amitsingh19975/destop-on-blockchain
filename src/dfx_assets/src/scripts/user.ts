@@ -7,14 +7,15 @@ import {
 } from './canisterHelper';
 import { ISerializedUserSetting } from '../stores';
 import { ItemCompletionCallbackType } from './types';
+import { IUser } from '../stores/user';
 
 const {
     createUser: createUserOnCanister,
     fetchUserInfo, fetchFileSystem: fetchFileSystemFromCanister, fetchSetting: fetchSettingFromCanister,
-    updateSetting, updateFileSystem,
+    updateSetting, updateFileSystem, updateUserInfo: updateUserInfoOnCanister,
 } = dfx;
 
-export const storeSetting = async (uid: UIDType, payload: GenericObjType) => {
+export const storeSetting = async (uid: keyof ISerializedUserSetting, payload: GenericObjType) => {
     const normalizeData = JSON.stringify(payload);
     const resultOr = await updateSetting(uid, normalizeData);
     handelCanisterErr(resultOr);
@@ -29,7 +30,8 @@ export const storeSettingBatch = async (
     Object.entries(payload)
         .forEach(([uid, obj]) => {
             const fn = async () => {
-                await storeSetting(uid, obj);
+                type Key = keyof ISerializedUserSetting;
+                await storeSetting(uid as Key, obj);
                 itemCompletionCallback({ type: 'progress' });
             };
             promises.push(fn());
@@ -91,10 +93,19 @@ export const createUser = async (
     });
 };
 
-export const getUserInfo = async () => {
+export const getUserInfo = async (): Promise<IUser | undefined> => {
     const userInfo = await fetchUserInfo();
     if (!('ok' in userInfo)) return undefined;
-    return userInfo.ok;
+    const {
+        firstname, lastname, avatar, uid,
+    } = userInfo.ok;
+    const temp = avatar.pop();
+    return {
+        uid,
+        firstname,
+        lastname,
+        profileAvatar: isDef(temp) ? JSON.parse(temp) : undefined,
+    };
 };
 
 export const fetchFileSystem = async (): Promise<IFileSystem> => {
@@ -107,5 +118,15 @@ export const fetchFileSystem = async (): Promise<IFileSystem> => {
 export const storeFileSystem = async (fs: IFileSystem) => {
     const serializedFS = JSON.stringify(serialize(fs));
     const result = await updateFileSystem(serializedFS);
+    handelCanisterErr(result);
+};
+
+export const updateUserInfo = async (user: IUser) => {
+    const { firstname, lastname, profileAvatar } = user;
+    const result = await updateUserInfoOnCanister({
+        firstname,
+        lastname,
+        avatar: isDef(profileAvatar) ? [JSON.stringify(profileAvatar)] : [],
+    });
     handelCanisterErr(result);
 };

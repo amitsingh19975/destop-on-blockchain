@@ -19,8 +19,8 @@
 </template>
 
 <script lang="ts">
-import { mapState, storeToRefs } from 'pinia';
-import { defineComponent, ref, provide } from 'vue';
+import { mapState } from 'pinia';
+import { defineComponent } from 'vue';
 import TheTaskbarVue from './components/TheTaskbar.vue';
 import useUser from './stores/user';
 import VNewUserDialogBox from './components/VNewUserDialogBox.vue';
@@ -44,7 +44,6 @@ export default defineComponent({
     },
     async mounted() {
         await useUser().init();
-        // await useUser().logout();
         // document.addEventListener('contextmenu', (e) => e.preventDefault());
     },
 });

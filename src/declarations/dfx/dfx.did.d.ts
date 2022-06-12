@@ -76,4 +76,5 @@ export interface _SERVICE {
   'showAllUsers' : ActorMethod<[], Array<DebugUserInfo>>,
   'updateFileSystem' : ActorMethod<[SerializedJsonType], Result>,
   'updateSetting' : ActorMethod<[UidType, SerializedJsonType], Result>,
+  'updateUserInfo' : ActorMethod<[UserInfo], Result>,
 }

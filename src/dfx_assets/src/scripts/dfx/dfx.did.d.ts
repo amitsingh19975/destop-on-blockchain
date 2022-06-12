@@ -65,4 +65,5 @@ export interface _SERVICE {
     'reset': ActorMethod<[], undefined>,
     'updateFileSystem': ActorMethod<[SerializedJsonType], ResultType<null>>,
     'updateSetting': ActorMethod<[UidType, SerializedJsonType], ResultType<null>>,
+    'updateUserInfo': ActorMethod<[UserInfo], Result>,
 }

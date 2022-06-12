@@ -16,6 +16,7 @@ import {
 import { notifyNeg } from './notify';
 import VFilePicker from '../components/VFilePicker.vue';
 import { isDef } from './basic';
+import useUser from '../stores/user';
 
 declare module 'vue' {
     interface ComponentCustomProperties {
@@ -121,8 +122,8 @@ export default defineComponent({
             if (typeof this.node === 'undefined') return undefined;
             return asFile(this.node);
         },
-        rootDir(): IDirectory | undefined {
-            return inject(rootInjectKey);
+        rootDir(): IDirectory {
+            return useUser().root;
         },
         dialogBoxProps: () => ({
             type: mDialogBox.type,

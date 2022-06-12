@@ -64,9 +64,9 @@ const useIcons = defineStore('useIconsStore', {
     state: () => ({
         icons: {
             startBtn: { type: 'Material', data: 'donut_small' },
-            close: { type: 'Fontawesome', data: 'fa-regular fa-xmark' },
-            maximize: { type: 'Fontawesome', data: 'fa-regular fa-maximize' },
-            minimize: { type: 'Fontawesome', data: 'fa-regular fa-minimize' },
+            close: { type: 'Fontawesome', data: 'fa-solid fa-xmark' },
+            maximize: { type: 'Fontawesome', data: 'fa-solid fa-maximize' },
+            minimize: { type: 'Fontawesome', data: 'fa-solid fa-minimize' },
             windowMinimize: {
                 type: 'Fontawesome',
                 data: 'fa-solid fa-window-minimize',

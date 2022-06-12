@@ -126,6 +126,17 @@ actor OperatingSystem{
         };
     };
 
+    public shared({caller}) func updateUserInfo(userInfo: Types.UserInfo): async Result<()> {
+        let userOr = Trie.get(mUsersMapping, userKey(caller), Principal.equal);
+        switch (userOr) {
+            case (?user) {
+                user.userInfo := userInfo;
+                #ok(updateUserMapping(caller, user))
+            };
+            case (_) return #err(#userDoesnotExist("[OperatingSystem.updateUserInfo]: user('" # Principal.toText(caller) # "') does not exist"));
+        };
+    };
+
     public query({caller}) func fetchUserInfo(): async Result<Types.UserInfoWithUid> {
         Result.mapOk(fetchUser(caller), func (user: User): Types.UserInfoWithUid {
             let userInfo = user.userInfo;

@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import { AuthClient } from '@dfinity/auth-client';
 import { Actor } from '@dfinity/agent';
 import { Ref, ref } from 'vue';
-import { number } from 'simple-cbor/src/value';
 import { IIcon } from '../scripts/types';
 import { dfx } from '../scripts/dfx';
 import { isDef } from '../scripts/basic';
@@ -10,11 +9,11 @@ import {
     createUser, fetchFileSystem, fetchSettingBatch, getUserInfo,
 } from '../scripts/user';
 import ROOT, { deserialize, IDirectory } from '../scripts/fs';
-import { deserializeUserSettings } from '.';
+import { deserializeUserSettings, setSettingsWatcher } from '.';
 import { CacheManager } from '../scripts/cacheManager';
 import { notifyNeg } from '../scripts/notify';
 
-interface IUser {
+export interface IUser {
     uid: string;
     firstname: string;
     lastname: string;
@@ -43,12 +42,7 @@ const useUser = defineStore('useUserStore', () => {
             isNewUser.value = true;
             return;
         }
-        userInfo.value = {
-            uid: tempUserInfo.uid,
-            firstname: tempUserInfo.firstname,
-            lastname: tempUserInfo.lastname,
-            profileAvatar: tempUserInfo.avatar.pop(),
-        } as IUser;
+        userInfo.value = tempUserInfo;
     };
 
     const percentageCal = (completion: number, total: number): number => ((completion / total) * 100);
@@ -107,7 +101,10 @@ const useUser = defineStore('useUserStore', () => {
         });
         isLoggedIn.value = true;
         await setUserInfoIfExist();
-        await initSystem();
+        if (!isNewUser.value) {
+            await initSystem();
+            setSettingsWatcher();
+        }
     };
 
     const setLoggedInState = async (): Promise<void> => {
@@ -169,6 +166,7 @@ const useUser = defineStore('useUserStore', () => {
         if (!isDef(temp)) throw new Error('unable to create user profile or backend is offline');
         userInfo.value = temp;
         isNewUser.value = false;
+        setSettingsWatcher();
     };
 
     return {

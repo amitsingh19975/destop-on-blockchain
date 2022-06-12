@@ -5,7 +5,7 @@ export default {
 </script>
 
 <template>
-    <q-dialog :model-value="!isLoggedIn">
+    <q-dialog :model-value="!isLoggedIn" persistent>
         <q-card class="bg-blue-grey-8" style="width: 500px">
             <q-card-actions align="stretch">
                 <v-btn flat border icon="login" label="Login" style="width:100%; height: 4rem;" :loading="isLoggingIn"
