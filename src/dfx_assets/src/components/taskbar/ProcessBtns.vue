@@ -1,7 +1,7 @@
 <template>
     <v-container orientation="horizontal" style="gap: 5px" @drop="onDrop" lock-axis="x">
         <v-draggable v-for="(pid, k) in indices" :key="k + pid">
-            <process-btn :active="process(pid).state" :name="process(pid).name" :icon="process(pid).icon"
+            <process-btn :active="process(pid).state" :name="process(pid).name" :icon="getWindowIcon(pid)"
                 style="margin-right: 5px" @click="handleClick(pid)" @mouseenter="fetchSnapshot(pid)">
                 <template v-slot:snapshot>
                     <!-- https://cdn.quasar.dev/img/mountains.jpg -->
@@ -19,9 +19,11 @@ import { Container as VContainer, Draggable as VDraggable } from 'vue-dndrop';
 import { reactive } from 'vue';
 import ProcessBtn from './ProcessBtn.vue';
 import useWindowManager from '../../stores/windowManager';
-import { PIDType } from '../../scripts/types';
+import { IIcon, PIDType } from '../../scripts/types';
 import { didTimeExpired, processSnapshot } from '../../scripts/utils';
 import { isDef } from '../../scripts/basic';
+import useIcons from '../../stores/icons';
+import { ComponentType } from '../../windowApp';
 
 const { process, indices } = storeToRefs(useWindowManager());
 const { changePositionForIndices, focusOn } = useWindowManager();
@@ -47,6 +49,12 @@ const fetchSnapshot = async (pid: PIDType) => {
     if (isDef(res)) {
         snapshots[pid] = [res, Date.now()];
     }
+};
+
+const getWindowIcon = (pid: number): IIcon => {
+    const { _window } = useWindowManager();
+    const compType = _window(pid).componentName;
+    return useIcons().compIcon(compType as ComponentType);
 };
 
 </script>

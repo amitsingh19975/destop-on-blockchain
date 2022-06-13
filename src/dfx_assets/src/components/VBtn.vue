@@ -1,6 +1,6 @@
 <template>
     <q-btn :flat="flat" :color="color" :label="label" class="btn no-shadow" :no-caps="noCaps" :icon="icon"
-        :disable="disable" :loading="loading" :percentage="percentage">
+        :disable="disable" :loading="loading" :percentage="percentage" :round="round" :size="size">
         <slot></slot>
         <template #loading>
             <slot name="loading"></slot>
@@ -25,6 +25,8 @@ interface IProps {
     disable?: boolean;
     loading?: boolean;
     percentage?: number;
+    round?: boolean;
+    size?: string;
 }
 const props = defineProps<IProps>();
 const { getColor } = storeToRefs(useTheme());

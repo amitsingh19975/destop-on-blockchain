@@ -1,9 +1,8 @@
 import {
-    defineComponent, inject, PropType, reactive,
+    defineComponent, PropType, reactive,
 } from 'vue';
 import useProcess from '../stores/process';
 import useWindowManager from '../stores/windowManager';
-import { rootInjectKey } from './injectKeys';
 import {
     IActionValue,
     IIcon, IProcess, IWindow, PIDType, ShapeType,
@@ -95,10 +94,6 @@ export default defineComponent({
             required: false,
             default: false,
         },
-        // root: {
-        //     type: Object as PropType<IFileSystem>,
-        //     required: true,
-        // },
     },
     setup() {
         return {
@@ -111,9 +106,6 @@ export default defineComponent({
                 process: useProcess().process[this.pid],
             };
         },
-        // _root(): IFileSystem | undefined {
-        //     return this.node && reactive(markRaw(this.node));
-        // },
         dir(): IDirectory | undefined {
             if (typeof this.node === 'undefined') return undefined;
             return asDir(this.node);
@@ -151,6 +143,9 @@ export default defineComponent({
                     }
                 },
             };
+        },
+        windowShape(): ShapeType {
+            return useWindowManager().windowShape(this.pid);
         },
     },
     methods: {
@@ -204,7 +199,6 @@ export default defineComponent({
                 return undefined;
             }
             if (!isFile(node)) {
-                console.log('HERE', currSelection, filename);
                 this.openDialogBox('danger', `Open File must be a "File" kind, but found "${node._nodeKind}"`);
                 return undefined;
             }

@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia';
 import { AuthClient } from '@dfinity/auth-client';
 import { Actor } from '@dfinity/agent';
-import { Ref, ref } from 'vue';
+import { Ref, ref, watch } from 'vue';
 import { IIcon } from '../scripts/types';
 import { dfx } from '../scripts/dfx';
 import { isDef, persistentStorage } from '../scripts/basic';
 import {
-    createUser, fetchFileSystem, fetchSettingBatch, getUserInfo,
+    createUser, fetchFileSystem, fetchSettingBatch, getUserInfo, storeFileSystem,
 } from '../scripts/user';
 import ROOT, { deserialize, IDirectory } from '../scripts/fs';
 import { deserializeUserSettings, setSettingsWatcher } from '.';
@@ -91,6 +91,15 @@ const useUser = defineStore('useUserStore', () => {
         return true;
     };
 
+    const initAfterProperLogin = async () => {
+        if (isNewUser.value) return;
+        await persistentStorage();
+        setSettingsWatcher();
+        watch(root, () => {
+            storeFileSystem(root.value);
+        }, { deep: true });
+    };
+
     const handleAuthenticated = async () => {
         if (!isDef(_authClient)) return;
         const identity = _authClient.getIdentity();
@@ -101,11 +110,8 @@ const useUser = defineStore('useUserStore', () => {
         });
         isLoggedIn.value = true;
         await setUserInfoIfExist();
-        if (!isNewUser.value) {
-            await initSystem();
-            await persistentStorage();
-            setSettingsWatcher();
-        }
+        if (!isNewUser.value) await initSystem();
+        await initAfterProperLogin();
     };
 
     const setLoggedInState = async (): Promise<void> => {
@@ -167,7 +173,7 @@ const useUser = defineStore('useUserStore', () => {
         if (!isDef(temp)) throw new Error('unable to create user profile or backend is offline');
         userInfo.value = temp;
         isNewUser.value = false;
-        setSettingsWatcher();
+        initAfterProperLogin();
     };
 
     return {

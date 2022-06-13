@@ -4,9 +4,9 @@
             <transition name="window-mini-maxi">
                 <keep-alive>
                     <v-window v-show="process(pid)?.state" :size="[_window(pid).width, _window(pid).height]"
-                        :name="process(pid).name" :icon="process(pid).icon" :position="_window(pid).position"
-                        :positionUnit="_window(pid).positionUnit" :pid="_window(pid).pid"
-                        @click="focusOn('window', pid)"
+                        :name="process(pid).name" :icon="getWindowIcon(_window(pid).componentName)"
+                        :position="_window(pid).position" :positionUnit="_window(pid).positionUnit"
+                        :pid="_window(pid).pid" @click="focusOn('window', pid)"
                         :style="{ zIndex: 10 + k, display: process(pid)?.state ? 'block' : 'none' }"
                         @close="closeWindow(pid)" @minimize="process(pid).state = false"
                         @resize="handleResize(pid, $event)" @drag="handleDrag(pid, $event)"
@@ -23,7 +23,9 @@ import { mapActions, mapState } from 'pinia';
 import { defineComponent, ref } from 'vue';
 import useWindowManager from '../stores/windowManager';
 import VWindow from './VWindow.vue';
-import { PIDType } from '../scripts/types';
+import { IIcon, PIDType } from '../scripts/types';
+import { ComponentType } from '../windowApp';
+import useIcons from '../stores/icons';
 
 type RDEventType = 'start' | 'end' | 'move';
 
@@ -79,6 +81,9 @@ export default defineComponent({
             const { position } = this._window(pid);
             position.x = left;
             position.y = top;
+        },
+        getWindowIcon(compType: string): IIcon {
+            return useIcons().compIcon(compType as ComponentType);
         },
     },
     mounted() {

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { GenericObjType } from '../scripts/basic';
+import { GenericObjType, patchObject } from '../scripts/basic';
 import { IFile, IFileSystem, isFile } from '../scripts/fs';
 import { readFile } from '../scripts/storage';
 import { IIcon, WinApp } from '../scripts/types';
@@ -45,7 +45,7 @@ const useExtMapping = defineStore('useExtMappingStore', {
             return this.map;
         },
         deserialize(data: GenericObjType): void {
-            Object.assign(this.map, data);
+            patchObject(this.map, data);
         },
         addMapping(ext: ExtMappingKeyType, icon: string, component?: ComponentType): void {
             this.map[ext] = {

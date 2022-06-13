@@ -24,3 +24,17 @@ export const persistentStorage = async () => {
     }
     return false;
 };
+
+export const patchObject = (obj: GenericObjType, patch: GenericObjType) => {
+    Object.entries(patch).forEach(([k, v]) => {
+        if (k in obj) {
+            if (typeof obj[k] !== 'object') {
+                obj[k] = v;
+                return;
+            }
+            if (typeof v === 'object') patchObject(obj[k] as GenericObjType, v as GenericObjType);
+        } else {
+            obj[k] = v;
+        }
+    });
+};

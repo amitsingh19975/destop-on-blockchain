@@ -128,7 +128,7 @@ export default defineComponent({
     },
     watch: {
         icon: {
-            async handler(val): Promise<void> {
+            async handler(): Promise<void> {
                 await this.handleLoading();
             },
             deep: true,

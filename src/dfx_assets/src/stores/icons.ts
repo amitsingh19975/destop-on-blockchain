@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 
 import { IIcon } from '../scripts/types';
-import { GenericObjType, isDef } from '../scripts/basic';
+import { GenericObjType, isDef, patchObject } from '../scripts/basic';
 import { ComponentType } from '../windowApp';
 
 interface IFileSystemIcons extends Record<string, IIcon> {
@@ -102,7 +102,10 @@ const useIcons = defineStore('useIconsStore', {
         ) => normalizeIcon(state.icons.fileSystem, key),
         compIcon: (state) => (
             key: ComponentType,
-        ) => normalizeIcon(state.icons.components, key),
+        ) => {
+            const temp = state.icons.components[key];
+            return isDef(temp) ? temp : UNKNOWN;
+        },
         has: ({ icons }) => (
             key: keyof Omit<IIcons, 'fileSystem'> | ['fileSystem', keyof IFileSystemIcons] | ['components', ComponentType],
         ): boolean => {
@@ -128,7 +131,7 @@ const useIcons = defineStore('useIconsStore', {
             return this.icons;
         },
         deserialize(data: GenericObjType): void {
-            Object.assign(this.icons, data);
+            patchObject(this.icons, data);
         },
     },
 });

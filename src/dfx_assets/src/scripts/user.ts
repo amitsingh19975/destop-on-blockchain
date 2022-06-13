@@ -8,6 +8,7 @@ import {
 import { ISerializedUserSetting } from '../stores';
 import { ItemCompletionCallbackType } from './types';
 import { IUser } from '../stores/user';
+import useCanisterManager from '../stores/canisterManager';
 
 const {
     createUser: createUserOnCanister,
@@ -16,9 +17,17 @@ const {
 } = dfx;
 
 export const storeSetting = async (uid: keyof ISerializedUserSetting, payload: GenericObjType) => {
+    useCanisterManager().addItem(uid, {
+        kind: 'upload',
+        type: 'setting',
+        state: 'processing',
+        uid,
+        time: Date.now(),
+    });
     const normalizeData = JSON.stringify(payload);
     const resultOr = await updateSetting(uid, normalizeData);
-    handelCanisterErr(resultOr);
+    handelCanisterErr(resultOr, uid);
+    useCanisterManager().setState(uid, 'success');
 };
 
 export const storeSettingBatch = async (
@@ -40,9 +49,24 @@ export const storeSettingBatch = async (
 };
 
 export const fetchSetting = async (uid: keyof ISerializedUserSetting): Promise<GenericObjType | undefined> => {
+    useCanisterManager().addItem(uid, {
+        kind: 'download',
+        type: 'setting',
+        state: 'processing',
+        uid,
+        time: Date.now(),
+    });
     const resultOr = await fetchSettingFromCanister(uid);
-    if (handelCanisterErr(resultOr)) return JSON.parse(resultOr.ok);
-    return undefined;
+    try {
+        handelCanisterErr(resultOr);
+        if (!('ok' in resultOr)) return undefined;
+        const result = JSON.parse(resultOr.ok);
+        useCanisterManager().setState(uid, 'success');
+        return result;
+    } catch (e) {
+        useCanisterManager().setState(uid, 'failed');
+        return undefined;
+    }
 };
 
 export const fetchSettingBatch = async (
@@ -109,16 +133,43 @@ export const getUserInfo = async (): Promise<IUser | undefined> => {
 };
 
 export const fetchFileSystem = async (): Promise<IFileSystem> => {
+    useCanisterManager().addItem('fs', {
+        kind: 'download',
+        type: 'fs',
+        state: 'processing',
+        time: Date.now(),
+    });
     const result = await fetchFileSystemFromCanister();
-    handelCanisterErr(result);
-    if (!('ok' in result)) throw new Error('[fetchFileSystem]: invalid response payload');
-    return JSON.parse(result.ok) as IFileSystem;
+    handelCanisterErr(result, 'fs');
+    try {
+        if (!('ok' in result)) {
+            throw new Error('[fetchFileSystem]: invalid response payload');
+        }
+        const response = JSON.parse(result.ok) as IFileSystem;
+        useCanisterManager().setState('fs', 'success');
+        return response;
+    } catch (e) {
+        useCanisterManager().setState('fs', 'failed');
+        throw e;
+    }
 };
 
 export const storeFileSystem = async (fs: IFileSystem) => {
-    const serializedFS = JSON.stringify(serialize(fs));
-    const result = await updateFileSystem(serializedFS);
-    handelCanisterErr(result);
+    useCanisterManager().addItem('fs', {
+        type: 'fs',
+        kind: 'upload',
+        state: 'processing',
+        time: Date.now(),
+    });
+    try {
+        const serializedFS = JSON.stringify(serialize(fs));
+        const result = await updateFileSystem(serializedFS);
+        handelCanisterErr(result, 'fs');
+        useCanisterManager().setState('fs', 'success');
+    } catch (e) {
+        useCanisterManager().setState('fs', 'failed');
+        throw e;
+    }
 };
 
 export const updateUserInfo = async (user: IUser) => {

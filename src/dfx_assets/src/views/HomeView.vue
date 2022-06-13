@@ -66,7 +66,7 @@ export default defineComponent({
     },
     methods: {
         ...mapActions(useLoader, ['loaded']),
-        ...mapActions(useWindowManager, ['initWindowManager', 'focusOn']),
+        ...mapActions(useWindowManager, ['initWindowManager', 'focusOn', 'makeWindow']),
         addFilesFromSystem(files: FileList): void {
             const len = files.length;
             for (let i = 0; i < len; i += 1) {
@@ -77,6 +77,11 @@ export default defineComponent({
     },
     async mounted() {
         this.initWindowManager(this.$el);
+        this.makeWindow({
+            name: 'Download Manager',
+            componentName: 'AppDownloadManager',
+            width: 900,
+        });
         this.loaded();
     },
 });

@@ -15,6 +15,7 @@ import {
     GenericObjType, JsonObjectType, isDef, MAX_HARDWARE_CONCURRENCY,
 } from './basic';
 import { ItemCompletionCallbackType } from './types';
+import useCanisterManager, { canisterContentInfoToStoreContentInfo } from '../stores/canisterManager';
 
 const {
     commitAssetChunk, deleteAsset: deleteAssetFromCanister, fetchAssetInfo, initiateAssetUpload,
@@ -58,8 +59,11 @@ export const parse = (data: { blob: number[], type: string }): AcceptableType =>
     return JSON.parse(TEXT_DECODER.decode(temp));
 };
 
-export const handelCanisterErr = <V extends ResultOkType>(val: ResultType<V>): val is { ok: V } => {
+export const handelCanisterErr = <V extends ResultOkType>(val: ResultType<V>, uid?: UIDType): val is { ok: V } => {
     if ('err' in val) {
+        if (isDef(uid)) {
+            useCanisterManager().setState(uid, 'failed');
+        }
         const messgae = Object.entries(val.err)[0];
         if (isDef(messgae)) {
             throw new Error(`${messgae[0]}("${messgae[1]}")`);
@@ -117,8 +121,16 @@ export const storeAssets = async (
         dtype: type,
     };
 
+    useCanisterManager().addItem(uid, {
+        kind: 'upload',
+        type: 'asset',
+        state: 'processing',
+        info: canisterContentInfoToStoreContentInfo(info),
+        processedChunks: 0,
+        time: Date.now(),
+    });
     const initErr = await initiateAssetUpload(info, [overwrite]);
-    handelCanisterErr(initErr);
+    handelCanisterErr(initErr, uid);
 
     const promises: Promise<void>[] = [];
     for (let i = 0, j = 0; i < len; i += CHUNK_SIZE, j += 1) {
@@ -134,14 +146,21 @@ export const storeAssets = async (
         };
         promises.push(addAssetChunkThroughWorker(workerId, temp, (resp) => {
             if ('error' in resp) throw new Error(resp.error.message);
+            useCanisterManager().incProcessedCChunk(uid);
         }));
     }
 
-    // TODO: Handle Failure
-    await Promise.all(promises);
+    try {
+        // TODO: Handle Failure
+        await Promise.all(promises);
+    } catch (e) {
+        useCanisterManager().setState(uid, 'failed');
+        console.warn(e);
+    }
 
     const commitErr = await commitAssetChunk(uid);
-    handelCanisterErr(commitErr);
+    handelCanisterErr(commitErr, uid);
+    useCanisterManager().setState(uid, 'success');
 };
 
 export const storeAssetsBatch = async (
@@ -173,10 +192,27 @@ export const storeAssetsBatch = async (
 };
 
 export const fetchAsset = async (uid: UIDType): Promise<{ info: ContentInfo, payload: AcceptableType }> => {
+    useCanisterManager().addItem(uid, {
+        kind: 'download',
+        type: 'asset',
+        state: 'init',
+        uid,
+        processedChunks: 0,
+        time: Date.now(),
+    });
     const infoErr = await fetchAssetInfo(uid);
-    handelCanisterErr(infoErr);
+    handelCanisterErr(infoErr, uid);
 
     const { ok: info } = infoErr as { ok: ContentInfo };
+
+    useCanisterManager().addItem(uid, {
+        kind: 'download',
+        type: 'asset',
+        state: 'processing',
+        processedChunks: 0,
+        info: canisterContentInfoToStoreContentInfo(info),
+        time: Date.now(),
+    });
 
     const { totalChunks, dtype: type } = info;
     const promises: Promise<void>[] = [];
@@ -186,14 +222,23 @@ export const fetchAsset = async (uid: UIDType): Promise<{ info: ContentInfo, pay
         const workerId = j % CANISTER_WORKER_POOL.length;
         promises.push(fetchAssetChunkThroughWorker(workerId, { chunkId, uid }, (resp) => {
             if ('error' in resp) throw new Error(resp.error.message);
+            useCanisterManager().incProcessedCChunk(uid);
             chunks[Number(chunkId)] = [...resp.result.chunk.chunk];
         }));
     }
 
-    await Promise.all(promises);
+    let result: { info: ContentInfo, payload: AcceptableType };
+    try {
+        await Promise.all(promises);
+        const flatenedArray = chunks.flat();
+        result = { info, payload: parse({ blob: flatenedArray, type }) };
+    } catch (e) {
+        useCanisterManager().setState(uid, 'failed');
+        throw e;
+    }
 
-    const flatenedArray = chunks.flat();
-    return { info, payload: parse({ blob: flatenedArray, type }) };
+    useCanisterManager().setState(uid, 'success');
+    return result;
 };
 
 export const fetchAssetBatch = async (
