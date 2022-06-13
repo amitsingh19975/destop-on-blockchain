@@ -134,9 +134,8 @@ export namespace CacheManager {
                 try {
                     const { payload } = await fetchAsset(uid);
                     oldVal = payload;
-                } catch (e) {
-                    canisterCallback?.({ error: e });
-                    return;
+                } catch {
+                    // DO NOTHING
                 }
             }
         } else oldVal = oldValueOr.data;

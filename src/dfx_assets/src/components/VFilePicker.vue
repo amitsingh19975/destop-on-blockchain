@@ -101,7 +101,7 @@ import { storeToRefs } from 'pinia';
 import {
     capitalize, CSSProperties, onMounted, reactive, ref, watch,
 } from 'vue';
-import ROOT, {
+import {
     IDirectory, IFileSystem, isDir, isFile, NodeKind, Path,
 } from '../scripts/fs';
 import { ShapeType } from '../scripts/types';
@@ -114,6 +114,7 @@ import ListView from './filemanager/ListView.vue';
 import { FileManager } from '../scripts/fileManager';
 import { isDef } from '../scripts/basic';
 import VNewFile from './VNewFile.vue';
+import useUser from '../stores/user';
 
 type PatternType = RegExp | string;
 type MatchingListType = Record<string, PatternType>;
@@ -227,7 +228,7 @@ const goBack = (): void => {
     const { level: nLevel, curDir: nCurDir } = FileManager.goBack({
         level: level.value,
         history: history.value,
-        root: props.root || ROOT,
+        root: props.root || useUser().root,
     });
     level.value = nLevel;
     if (isDef(nCurDir)) {

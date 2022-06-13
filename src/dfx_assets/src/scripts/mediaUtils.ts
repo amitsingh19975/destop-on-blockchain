@@ -1,9 +1,11 @@
+import useUser from '../stores/user';
 import { isDef } from './basic';
+import { CanisterAssetCommitCallbackType } from './cacheManager';
 import {
     IFile, IDirectory, makeFile, addChild,
 } from './fs';
 import { notifyNeg } from './notify';
-import { writeFile, readFile } from './storage';
+import { writeFile, readFile, removeFSNode } from './storage';
 import { MediaType } from './types';
 import { isURI } from './utils';
 
@@ -23,8 +25,7 @@ export const isMIMEType = (mime: string, type: AcceptableMIMEType): boolean => {
 };
 
 const invokeMatchCallback = async (data: File, callback?: (data: File) => Promise<void> | void) => {
-    const res = callback?.(data);
-    if (res instanceof Promise) await res;
+    await callback?.(data);
 };
 
 export const matchMIMEType = async (file: File, {
@@ -67,22 +68,37 @@ const dataURItoBlob = async (dataURI: string) => {
 };
 
 export const saveMedia = async (node: IFile, src: Blob | string, type: string) => {
+    let payload: Blob | MediaType | string = src;
     if (typeof src === 'string') {
         if (isURI(src)) {
             const blob = await dataURItoBlob(src);
-            await writeFile<MediaType>({ node, data: blob });
+            payload = blob;
         } else {
-            await writeFile<MediaType>({
-                node,
-                data: {
-                    data: src,
-                    type,
-                },
-            });
+            payload = {
+                data: src,
+                type,
+            };
         }
         return;
     }
-    await writeFile<MediaType>({ node, data: src });
+    const handler: CanisterAssetCommitCallbackType = (args) => {
+        if ('error' in args) throw args.error;
+    };
+    await new Promise<void>((resolve, reject) => {
+        writeFile<MediaType | Blob | string>({
+            node,
+            data: payload,
+            canisterCommitCallback: (args) => {
+                if ('error' in args) {
+                    reject(args.error);
+                    return;
+                }
+                resolve();
+            },
+            localCommitCompletionCallback: handler,
+            mode: 'overwrite',
+        });
+    });
 };
 
 export const saveImage = (node: IFile, src: Blob | string, type = 'image/png') => saveMedia(node, src, type);
@@ -130,42 +146,51 @@ export const loadMedia = async (node: IFile, { matchType, asBase64 = false }: {
 };
 
 export const saveFileToAccount = async (file: File, curDir: IDirectory) => {
+    const node = makeFile({
+        name: file.name,
+        size: file.size,
+        useNameToGetExt: true,
+        _isCommitted: false,
+    }, curDir);
     try {
-        const createFile = (f: File) => {
-            const { name, size } = f;
-            return makeFile({
-                name,
-                size,
-                useNameToGetExt: true,
-            });
+        const handler: CanisterAssetCommitCallbackType = (args) => {
+            if ('error' in args) throw args.error;
         };
-
         await matchMIMEType(file, {
             text: async (f) => {
                 const txt = await f.text();
-                const node = createFile(f);
-                await writeFile<string>({ node, data: txt });
-                addChild(curDir, node);
+                await new Promise<void>((resolve, reject) => {
+                    writeFile<MediaType | Blob | string>({
+                        node,
+                        data: txt,
+                        canisterCommitCallback: (args) => {
+                            if ('error' in args) {
+                                reject(args.error);
+                                return;
+                            }
+                            resolve();
+                        },
+                        localCommitCompletionCallback: handler,
+                        mode: 'overwrite',
+                    });
+                });
             },
             image: async (f) => {
-                const node = createFile(f);
                 await saveImage(node, f);
-                addChild(curDir, node);
             },
             video: async (f) => {
-                const node = createFile(f);
                 await saveVideo(node, f);
-                addChild(curDir, node);
             },
             audio: async (f) => {
-                const node = createFile(f);
                 await saveAudio(node, f);
-                addChild(curDir, node);
             },
         });
+        node._isCommitted = true;
     } catch (e) {
         notifyNeg(e);
+        removeFSNode(node);
     }
+    await useUser().updateFileSystem();
 };
 
 export const validateImage = async (url: unknown): Promise<boolean> => new Promise((resolve) => {

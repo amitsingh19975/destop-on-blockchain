@@ -77,11 +77,11 @@ export default defineComponent({
     },
     async mounted() {
         this.initWindowManager(this.$el);
-        this.makeWindow({
-            name: 'Download Manager',
-            componentName: 'AppDownloadManager',
-            width: 900,
-        });
+        // this.makeWindow({
+        //     name: 'Download Manager',
+        //     componentName: 'AppDownloadManager',
+        //     width: 900,
+        // });
         this.loaded();
     },
 });

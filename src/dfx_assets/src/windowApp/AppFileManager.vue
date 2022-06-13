@@ -24,7 +24,7 @@
                 <template v-slot:after>
                     <div class="fit" v-context-menu="contextMenu">
                         <icons-view ref="iconViewRef" :items="children" :children-keys="Object.keys(children)"
-                            direction="col" :pid="pid" :key="splitterModel" @dbclick="open">
+                            direction="col" :pid="pid" :key="splitterModel" @dblclick="open">
                         </icons-view>
                         <v-droppable :drop-callback="addFilesFromSystem"></v-droppable>
                     </div>
@@ -46,7 +46,7 @@ import { ionFileTrayFull } from '@quasar/extras/ionicons-v6';
 import BaseWindowComp from '../scripts/baseWindowComp';
 import IconsView from '../components/filemanager/IconsView.vue';
 import VTree from '../components/VTree.vue';
-import ROOT, {
+import {
     asDir, cd, IDirectory, IFileSystem, isDir, NodeKind, Path,
 } from '../scripts/fs';
 import { FileManager } from '../scripts/fileManager';
@@ -63,6 +63,7 @@ import { IContextMenuBindingArgs } from '../plugins/v-context-menu';
 import VNewFile from '../components/VNewFile.vue';
 import { saveFileToAccount } from '../scripts/mediaUtils';
 import { isDef } from '../scripts/basic';
+import useUser from '../stores/user';
 
 export default defineComponent({
     name: 'AppFileManager',
@@ -78,7 +79,7 @@ export default defineComponent({
     setup() {
         return {
             splitterModel: ref(30),
-            curDir: shallowRef<IDirectory>(ROOT),
+            curDir: shallowRef<IDirectory>(useUser().root),
             history: [] as Readonly<IDirectory>[],
             level: ref(0),
             mainRef: ref<HTMLElement | null | { $el: HTMLElement }>(null),
@@ -132,7 +133,7 @@ export default defineComponent({
             const { level, curDir } = FileManager.goBack({
                 level: this.level,
                 history: this.history,
-                root: this.rootDir || ROOT,
+                root: this.rootDir || useUser().root,
             });
             this.level = level;
             this.curDir = curDir || this.curDir;

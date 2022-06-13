@@ -10,17 +10,13 @@ import {
 
 export type NodeKind = 'Dir' | 'File';
 
-let gFsTIMEOUT = 1 * 1000;
-
-export const updateFlushTimeout = (timeout: number) => { gFsTIMEOUT = timeout; };
-export const getFlushTimeout = () => gFsTIMEOUT;
-
 export interface IFileSystem {
     _uid: Readonly<string>;
     name: string;
     size: number;
     parent?: IFileSystem;
     _nodeKind: Readonly<NodeKind>;
+    _isCommitted: boolean;
 }
 
 export interface IFile extends IFileSystem {
@@ -84,7 +80,9 @@ const makeCommonFields = <K extends NodeKind>(
 });
 
 export const makeRoot = (): IDirectory => ({
-    ...makeCommonFields({ name: '', size: 0, _nodeKind: 'Dir' }),
+    ...makeCommonFields({
+        name: '', size: 0, _nodeKind: 'Dir', _isCommitted: true,
+    }),
     _children: {},
     _isRoot: true,
 });
@@ -326,6 +324,7 @@ type MakeFileArgsType = {
     parent?: IDirectory;
     ext?: string;
     useNameToGetExt?: boolean;
+    _isCommitted?: boolean;
 };
 
 type MakeDirArgsType = {
@@ -333,6 +332,7 @@ type MakeDirArgsType = {
     size?: number;
     parent?: IDirectory;
     children?: IDirectory['_children'];
+    _isCommitted?: boolean;
 };
 
 const makeFileHelper = (args: MakeFileArgsType): IFile => {
@@ -342,6 +342,7 @@ const makeFileHelper = (args: MakeFileArgsType): IFile => {
         parent,
         ext: tempExt,
         useNameToGetExt,
+        _isCommitted = true,
     } = args;
 
     let name = tempName.trim();
@@ -362,7 +363,9 @@ const makeFileHelper = (args: MakeFileArgsType): IFile => {
     if (size) propogateSize(size, parent);
 
     const res: IFile = {
-        ...makeCommonFields({ name, size, _nodeKind: 'File' }),
+        ...makeCommonFields({
+            name, size, _nodeKind: 'File', _isCommitted,
+        }),
         stem,
         parent,
         ext,
@@ -374,6 +377,7 @@ const makeFileHelper = (args: MakeFileArgsType): IFile => {
 const makeDirHelper = (args: MakeDirArgsType): IDirectory => {
     const {
         name: tempName, size = 0, parent, children,
+        _isCommitted = true,
     } = args;
 
     const name = tempName.trim();
@@ -384,7 +388,9 @@ const makeDirHelper = (args: MakeDirArgsType): IDirectory => {
     if (size) propogateSize(size, parent);
 
     const res: IDirectory = {
-        ...makeCommonFields({ name, size, _nodeKind: 'Dir' }),
+        ...makeCommonFields({
+            name, size, _nodeKind: 'Dir', _isCommitted,
+        }),
         parent,
         _children: children || {},
         _isRoot: false,
@@ -548,6 +554,7 @@ export const serialize = <
     if (isDir(node)) {
         const children: IDirectory['_children'] = {};
         Object.entries(node._children).forEach(([k, v]) => {
+            if (!v._isCommitted) return;
             children[k] = serialize(v);
         });
         return {
@@ -557,6 +564,7 @@ export const serialize = <
             _isRoot: node._isRoot,
             _nodeKind: node._nodeKind,
             _uid: node._uid,
+            _isCommitted: node._isCommitted,
         };
     }
     throw new Error('[serialize]: unknown type');

@@ -1,4 +1,8 @@
-import { IFileSystem, NodeKind } from '.';
+import {
+    IDirectory, IFileSystem, isDir, NodeKind, removeChild,
+} from '.';
+import { isDef } from '../basic';
+import { removeFSNode } from '../storage';
 
 type ComponentKind = 'RootDir' | 'ParDir' | 'CurDir' | 'Normal';
 
@@ -67,3 +71,14 @@ export const equalFs = (
     lhs?: IFileSystem,
     rhs?: IFileSystem,
 ) => (lhs?._uid === rhs?._uid);
+
+export const removeIfNotCommitted = (node: IFileSystem): IFileSystem | undefined => {
+    if (!node._isCommitted) {
+        const { parent } = node;
+        if (!isDef(parent)) return undefined;
+        removeChild(parent as IDirectory, node.name, node._nodeKind);
+        return parent;
+    }
+    if (isDir(node)) Object.values(node._children).forEach(removeIfNotCommitted);
+    return node;
+};

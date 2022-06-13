@@ -91,13 +91,15 @@ const useUser = defineStore('useUserStore', () => {
         return true;
     };
 
+    const updateFileSystem = async () => {
+        storeFileSystem(root.value);
+    };
+
     const initAfterProperLogin = async () => {
         if (isNewUser.value) return;
         await persistentStorage();
         setSettingsWatcher();
-        watch(root, () => {
-            storeFileSystem(root.value);
-        }, { deep: true });
+        watch(root, () => updateFileSystem(), { deep: true });
     };
 
     const handleAuthenticated = async () => {
@@ -188,6 +190,7 @@ const useUser = defineStore('useUserStore', () => {
         root,
         isLogOutInProcess,
         loadingPercentage,
+        updateFileSystem,
     };
 });
 

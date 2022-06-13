@@ -3,7 +3,7 @@ import { isDef } from '../scripts/basic';
 import { UIDType } from '../scripts/canisterHelper';
 import { ContentInfo } from '../scripts/dfx/dfx.did.d';
 
-type ContentInfoType = { [k in keyof ContentInfo]: ContentInfo[k] extends BigInt ? Number : ContentInfo[k] };
+type ContentInfoType = { [k in keyof ContentInfo]: ContentInfo[k] extends BigInt ? number : ContentInfo[k] };
 
 export type ItemType = { kind: 'download' | 'upload', time: number } & (
     { state: 'success' | 'failed' | 'processing' } & ({
@@ -46,6 +46,7 @@ const useCanisterManager = defineStore('useCanisterManagerStore', {
             return res;
         },
         isEmpty: ({ activities }) => Object.keys(activities).length === 0,
+        has: ({ activities }) => (uid: UIDType) => uid in activities,
     },
     actions: {
         addItem(uid: UIDType, item: ItemType, destructTimeout: null | number = 5 * 60 * 1000 /* 5 min */): void {

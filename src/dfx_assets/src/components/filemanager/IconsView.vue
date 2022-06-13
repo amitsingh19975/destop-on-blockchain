@@ -3,10 +3,9 @@
         <span style="color: white" v-for="(fs, name, i) in items" :key="childrenKeys[i]">
             <v-item-icon :node="fs" :focused="focusedIconId === i" @click="focusIcon(i, fs)"
                 :edit-mode="editModeIconId === i" :dimmed-focus="isDimmedFocus(i)" @unfocus="unfocus()"
-                @dbclick="emitDbClick(fs)" @update:position="updatePosition(name, $event)" :ref="setIconsRefs"
+                @dblclick="emitDblClick(fs)" @update:position="updatePosition(name, $event)" :ref="setIconsRefs"
                 :style="getIconStyle(name)" v-context-menu="contextMenu" @update:label="renameNode(name, $event)">
             </v-item-icon>
-            <!-- @dbclick="editModeIconId = i" -->
         </span>
     </span>
 </template>
@@ -30,8 +29,10 @@ import { renameFsNode } from '../../scripts/fs/commands';
 import { ascendingOrderAndSavePostiion } from '../../scripts/iconUtils';
 import { rootInjectKey } from '../../scripts/injectKeys';
 import { notifyNeg } from '../../scripts/notify';
+import { removeFSNode } from '../../scripts/storage';
 import { IPosition, PIDType, ShapeType } from '../../scripts/types';
 import { CLIPBOARD_IDS, elementShape } from '../../scripts/utils';
+import useCanisterManager from '../../stores/canisterManager';
 import useIcons from '../../stores/icons';
 import useLocalClipboard from '../../stores/localClipboard';
 import useWindowManager from '../../stores/windowManager';
@@ -44,7 +45,7 @@ interface IProps {
     childrenKeys: string[],
 }
 interface IEmits {
-    (e: 'dbclick', name?: string): void;
+    (e: 'dblclick', name?: string): void;
     (e: 'click', name?: string): void;
 }
 
@@ -86,9 +87,9 @@ const unfocus = () => {
     curFocusedNode = undefined;
 };
 
-const emitDbClick = (fs: IFileSystem) => {
+const emitDblClick = (fs: IFileSystem) => {
     focusHelper(fs);
-    emits('dbclick', fs.name);
+    emits('dblclick', fs.name);
 };
 const updatePosition = (name: string, pos: IPosition) => {
     positions[name] = pos;
@@ -167,6 +168,23 @@ const contextMenu: IContextMenuBindingArgs = {
             icon: useIcons().qIcon('rename'),
             action: () => {
                 editModeIconId.value = focusedIconId.value;
+            },
+        },
+        Remove: {
+            showCondition: () => {
+                if (!isDef(curFocusedNode)) return false;
+                const { _uid, _isCommitted } = curFocusedNode;
+                const item = useCanisterManager().getItem(_uid);
+                if (!isDef(item)) return _isCommitted;
+                return _isCommitted && (item.state === 'success' || item.state === 'failed');
+            },
+            action: async () => {
+                await removeFSNode(curFocusedNode!);
+                console.log(root);
+            },
+            icon: {
+                type: 'Material',
+                data: 'delete',
             },
         },
     }),

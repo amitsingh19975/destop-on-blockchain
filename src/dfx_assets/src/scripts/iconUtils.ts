@@ -1,10 +1,6 @@
-import useWriteInProgress from '../stores/writeInProgress';
-import ROOT, { IFileSystem, IDirectory, Path } from './fs';
+import { IFileSystem } from './fs';
 import { makeFsId } from './fs/utils';
-import { openFile, readFile, writeFile } from './storage';
 import { IPosition, ShapeType } from './types';
-
-type IIconPositionType = Record<string, IPosition>;
 
 export const ascendingOrder = (
     direction: 'row' | 'col',

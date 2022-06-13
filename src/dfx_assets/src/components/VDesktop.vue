@@ -1,7 +1,7 @@
 <template>
     <div class="no-user-select" v-context-menu="contextMenu">
         <icons-view ref="iconViewRef" :items="children" :children-keys="Object.keys(children)"
-            :direction="direction || 'row'" @dbclick="open"></icons-view>
+            :direction="direction || 'row'" @dblclick="open"></icons-view>
         <v-new-file :root="curDir" :type="newFileType" v-model="newFilePrompt"></v-new-file>
     </div>
 </template>

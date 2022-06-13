@@ -6,18 +6,22 @@
                 'absolute fit': true,
                 'item-icon--focused': focused,
             }" style="border-radius: 5px; border: 1px solid transparent" v-show="focused"></span>
-            <v-icon class="cursor-pointer" @click="$emit('click')" @dblclick="$emit('dbclick')" :icon="icon" square
+            <v-icon class="cursor-pointer" @click="handleClick" @dblclick="handleDblClick" :icon="icon" square
                 :size="`${fontSize * sizeFactor}rem`" font-size="90%" v-click-outside="clickOutsideHandler"
                 style="text-shadow: 0px 0px 2px black" :loading="isLoading"></v-icon>
         </div>
-        <div class="item-text no-scroll text-weight-medium" :style="getTextStyle" ref="itemText">
+        <div :class="['item-text no-scroll text-weight-medium', showProgressBar ? 'full-width' : '']"
+            :style="getTextStyle" ref="itemText">
             <div :class="{
                 ellipsis: !editMode,
                 'no-user-select': !editMode,
                 'user-select': editMode,
-            }" :contenteditable="editMode" @input="updateLabel($event)" @click="$emit('click')"
-                @dblclick="$emit('dbclick')" ref="textRef" @keydown.enter.prevent="submit">
+            }" :contenteditable="editMode" @input="updateLabel($event)" @click="handleClick" @dblclick="handleDblClick"
+                @keydown.enter.prevent="submit" v-if="!showProgressBar">
                 {{ node.name }}
+            </div>
+            <div v-else class="full-width" style="padding: 0 1rem 0 1rem">
+                <q-linear-progress dark size="10px" :value="progress" color="blue-8" />
             </div>
             <q-tooltip>{{ node.name }}</q-tooltip>
         </div>
@@ -32,7 +36,7 @@ import {
 } from 'vue';
 import { IClickOutsideBindingArgs } from '../../plugins/v-click-outside';
 import {
-    IFileSystem, isDir, isFile,
+    IFileSystem, isFile,
 } from '../../scripts/fs';
 import {
     IIcon, IPosition, MediaType, ShapeType,
@@ -45,6 +49,7 @@ import { FileManager } from '../../scripts/fileManager';
 import { readFile } from '../../scripts/storage';
 import { isDef } from '../../scripts/basic';
 import { isMIMEType, readAsDataURL, validateImage } from '../../scripts/mediaUtils';
+import useCanisterManager from '../../stores/canisterManager';
 
 const BOX_SHAPE = {
     width: 130,
@@ -64,7 +69,7 @@ interface IProps {
 interface IEmits {
     (e: 'unfocus'): void;
     (e: 'click'): void;
-    (e: 'dbclick'): void;
+    (e: 'dblclick'): void;
     (e: 'update:label', label: string): void;
     (e: 'update:position', position: IPosition): void;
 }
@@ -86,10 +91,29 @@ let windowFontSize = 12;
 const itemText = ref<HTMLElement | null>(null);
 const node = toRef(props, 'node');
 const labelText = ref(props.node.name);
-// const textRef =
 
 const icon = ref<IIcon>();
 const isLoading = ref(true);
+
+const downloadOrUploadItem = computed(() => useCanisterManager().getItem(node.value._uid));
+const showProgressBar = computed(() => isDef(downloadOrUploadItem.value) && downloadOrUploadItem.value.state !== 'success');
+const progress = computed(() => {
+    if (!isDef(downloadOrUploadItem.value)) return 0;
+    const item = downloadOrUploadItem.value;
+    if ('info' in item) return ((item.processedChunks / item.info.totalChunks) * 100);
+    if (item.state === 'success') return 100;
+    return 0;
+});
+
+const handleClick = () => {
+    if (showProgressBar.value) return;
+    emits('click');
+};
+
+const handleDblClick = () => {
+    if (showProgressBar.value) return;
+    emits('dblclick');
+};
 
 onMounted(async () => {
     const loaded = () => {
@@ -178,6 +202,7 @@ const getIconStyle = computed<CSSProperties>(() => {
     return {
         width: `${width * props.sizeFactor}px`,
         height: `${height * props.sizeFactor}px`,
+        opacity: showProgressBar.value ? '0.5' : '1',
     };
 });
 const getTextBorder = computed<string | undefined>(() => {
