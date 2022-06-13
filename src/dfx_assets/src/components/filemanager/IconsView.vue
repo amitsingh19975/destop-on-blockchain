@@ -180,7 +180,6 @@ const contextMenu: IContextMenuBindingArgs = {
             },
             action: async () => {
                 await removeFSNode(curFocusedNode!);
-                console.log(root);
             },
             icon: {
                 type: 'Material',

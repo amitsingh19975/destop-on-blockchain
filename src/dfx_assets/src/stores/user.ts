@@ -6,10 +6,10 @@ import { IIcon } from '../scripts/types';
 import { dfx } from '../scripts/dfx';
 import { isDef, persistentStorage } from '../scripts/basic';
 import {
-    createUser, fetchFileSystem, fetchSettingBatch, getUserInfo, storeFileSystem,
+    createUser, fetchFileSystem, fetchSettingBatch, getUserInfo, storeFileSystem, storeSettingBatch,
 } from '../scripts/user';
 import ROOT, { deserialize, IDirectory } from '../scripts/fs';
-import { deserializeUserSettings, setSettingsWatcher } from '.';
+import { deserializeUserSettings, serializeUserSettings, setSettingsWatcher } from '.';
 import { CacheManager } from '../scripts/cacheManager';
 import { notifyNeg } from '../scripts/notify';
 
@@ -72,12 +72,18 @@ const useUser = defineStore('useUserStore', () => {
         // console.log(root.value);
     };
 
+    const updateFileSystem = async () => {
+        storeFileSystem(root.value);
+    };
+
     const logout = async (): Promise<boolean> => {
         if (!isDef(_authClient)) return true;
         isLogOutInProcess.value = true;
         try {
             await _authClient.logout();
             await CacheManager.flush();
+            await updateFileSystem();
+            await storeSettingBatch(serializeUserSettings());
         } catch (e) {
             notifyNeg(e, { pre: 'Encoutered error while logout: ' });
             isLogOutInProcess.value = false;
@@ -89,10 +95,6 @@ const useUser = defineStore('useUserStore', () => {
         // eslint-disable-next-line no-restricted-globals
         location.reload();
         return true;
-    };
-
-    const updateFileSystem = async () => {
-        storeFileSystem(root.value);
     };
 
     const initAfterProperLogin = async () => {

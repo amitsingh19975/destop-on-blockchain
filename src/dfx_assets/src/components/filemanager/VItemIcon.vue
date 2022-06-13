@@ -21,7 +21,7 @@
                 {{ node.name }}
             </div>
             <div v-else class="full-width" style="padding: 0 1rem 0 1rem">
-                <q-linear-progress dark size="10px" :value="progress" color="blue-8" />
+                <q-linear-progress size="10px" :value="progress" color="blue-8" />
             </div>
             <q-tooltip>{{ node.name }}</q-tooltip>
         </div>

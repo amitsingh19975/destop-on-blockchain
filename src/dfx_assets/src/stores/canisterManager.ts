@@ -1,4 +1,7 @@
 import { defineStore } from 'pinia';
+import { Notify } from 'quasar';
+import { number } from 'simple-cbor/src/value';
+import { capitalize } from 'vue';
 import { isDef } from '../scripts/basic';
 import { UIDType } from '../scripts/canisterHelper';
 import { ContentInfo } from '../scripts/dfx/dfx.did.d';
@@ -29,6 +32,7 @@ export const canisterContentInfoToStoreContentInfo = (info: ContentInfo): Conten
 const useCanisterManager = defineStore('useCanisterManagerStore', {
     state: () => ({
         activities: {} as Record<UIDType, ItemType>,
+        _pid: -1,
     }),
     getters: {
         downalods: ({ activities }) => {

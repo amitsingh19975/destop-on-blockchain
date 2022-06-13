@@ -1,4 +1,5 @@
 import { Notify } from 'quasar';
+import { ItemType } from '../stores/canisterManager';
 
 type MessageType = string | Error | unknown;
 

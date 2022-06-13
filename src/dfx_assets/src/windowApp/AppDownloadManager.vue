@@ -173,6 +173,7 @@ export default defineComponent({
         async wBeforeLoaded(): Promise<void> {
             this.closeDialogBox();
             await this.show();
+            this.resize({ height: this.windowShape.height, width: 900 });
         },
         rowKey(item: ItemType): UIDType {
             if ('uid' in item) return item.uid;
@@ -198,6 +199,7 @@ export default defineComponent({
         },
     },
     mounted() {
+
     },
     registerIcon(): void {
         useIcons().registerComponentIcon('AppDownloadManager', {
