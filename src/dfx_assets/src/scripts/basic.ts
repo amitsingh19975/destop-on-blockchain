@@ -15,3 +15,12 @@ export type JsonObjectType =
     | Array<JsonObjectType>;
 
 export const MAX_HARDWARE_CONCURRENCY = navigator?.hardwareConcurrency || 4;
+
+export const persistentStorage = async () => {
+    if (navigator.storage && navigator.storage.persist) {
+        const isPersisted = await navigator.storage.persist();
+        if (!isPersisted) console.warn('User data may not persist, or you lose it on page refresh');
+        return isPersisted;
+    }
+    return false;
+};

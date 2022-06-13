@@ -8,6 +8,7 @@ import AppVideoViewer from './AppVideoViewer.vue';
 import AppMusicPlayer from './AppMusicPlayer.vue';
 import AppDesktopWallpaper from './AppDesktopWallpaper.vue';
 import AppProfile from './AppProfile.vue';
+import AppDownloadManager from './AppDownloadManager.vue';
 
 const components = {
     AppJsonEditor,
@@ -19,6 +20,7 @@ const components = {
     AppMusicPlayer,
     AppDesktopWallpaper,
     AppProfile,
+    AppDownloadManager,
 } as const;
 
 export default function registerWinApp(app: App): void {

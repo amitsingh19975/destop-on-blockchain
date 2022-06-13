@@ -109,4 +109,5 @@ service : {
   showAllUsers: () -> (vec DebugUserInfo) query;
   updateFileSystem: (SerializedJsonType) -> (Result);
   updateSetting: (UidType, SerializedJsonType) -> (Result);
+  updateUserInfo: (UserInfo) -> (Result);
 }

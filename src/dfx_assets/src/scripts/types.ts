@@ -159,4 +159,4 @@ export type MediaType = {
     type: string,
 } | Blob;
 
-export type ItemCompletionCallbackType = (arg: { type: 'itemEstimation', items: number } | { type: 'progress' }) => void;
+export type ItemCompletionCallbackType = (arg: { type: 'itemEstimation', items: number } | { type: 'progress', item: { uid: string, name?: string } }) => void;

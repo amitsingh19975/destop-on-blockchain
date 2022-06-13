@@ -132,7 +132,8 @@ export namespace CacheManager {
         if (!isDef(oldValueOr)) {
             if (mode !== 'overwrite') {
                 try {
-                    oldVal = await fetchAsset(uid);
+                    const { payload } = await fetchAsset(uid);
+                    oldVal = payload;
                 } catch (e) {
                     canisterCallback?.({ error: e });
                     return;
@@ -203,7 +204,8 @@ export namespace CacheManager {
 
         if (!isDef(dataOr)) {
             try {
-                const res = await fetchAsset(uid);
+                const { payload } = await fetchAsset(uid);
+                const res = payload;
                 _put(uid, name, res);
                 data = res;
             } catch {

@@ -2,6 +2,9 @@
     <q-btn :flat="flat" :color="color" :label="label" class="btn no-shadow" :no-caps="noCaps" :icon="icon"
         :disable="disable" :loading="loading" :percentage="percentage">
         <slot></slot>
+        <template #loading>
+            <slot name="loading"></slot>
+        </template>
     </q-btn>
 </template>
 

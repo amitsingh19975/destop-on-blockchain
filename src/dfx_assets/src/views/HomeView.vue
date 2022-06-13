@@ -76,38 +76,7 @@ export default defineComponent({
         },
     },
     async mounted() {
-        // if (isDef(this.desktopRef)) {
-        //     this.desktopRef.addEventListener('contextmenu', (e) => {
-        //         console.log('Desktop: ', e.target);
-        //     }, true);
-        // }
-
         this.initWindowManager(this.$el);
-        // await populateUsers(this.root);
-        // makeDir({ name: 'user' }, this.root);
-        // makeDir({ name: 'user1' }, this.root);
-        // makeDir({ name: 'user2' }, this.root);
-        // makeDir({ name: 'user3' }, this.root);
-        // makeDir({ name: 'user4' }, this.root);
-        // makeDir({ name: 'desktop' }, this.root);
-        // makeDir({ name: 'game' }, this.root);
-        // const temp = makeDir({ name: 'test' }, '/desktop', { root: this.root });
-        // makeFile({
-        //     name: 'test.txt',
-        //     useNameToGetExt: true,
-        // }, this.root);
-
-        // const lofi = makeFile({
-        //     name: 'Lofi Study',
-        //     ext: 'mp3',
-        // }, this.root);
-        // await writeFile<MediaType>({
-        //     node: lofi,
-        //     data: {
-        //         data: './music/lofi-study.mp3',
-        //         type: 'audio/mp3',
-        //     },
-        // });
         this.loaded();
     },
 });

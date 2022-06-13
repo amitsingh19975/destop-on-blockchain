@@ -4,7 +4,7 @@ import { Actor } from '@dfinity/agent';
 import { Ref, ref } from 'vue';
 import { IIcon } from '../scripts/types';
 import { dfx } from '../scripts/dfx';
-import { isDef } from '../scripts/basic';
+import { isDef, persistentStorage } from '../scripts/basic';
 import {
     createUser, fetchFileSystem, fetchSettingBatch, getUserInfo,
 } from '../scripts/user';
@@ -103,6 +103,7 @@ const useUser = defineStore('useUserStore', () => {
         await setUserInfoIfExist();
         if (!isNewUser.value) {
             await initSystem();
+            await persistentStorage();
             setSettingsWatcher();
         }
     };

@@ -32,7 +32,7 @@ export const storeSettingBatch = async (
             const fn = async () => {
                 type Key = keyof ISerializedUserSetting;
                 await storeSetting(uid as Key, obj);
-                itemCompletionCallback({ type: 'progress' });
+                itemCompletionCallback({ type: 'progress', item: { uid } });
             };
             promises.push(fn());
         });
@@ -55,7 +55,7 @@ export const fetchSettingBatch = async (
     itemCompletionCallback({ type: 'itemEstimation', items: uids.length });
     uids.forEach((uid) => {
         if (set.has(uid)) {
-            itemCompletionCallback({ type: 'progress' });
+            itemCompletionCallback({ type: 'progress', item: { uid } });
             return;
         }
         set.add(uid);
@@ -63,7 +63,7 @@ export const fetchSettingBatch = async (
             const result = await fetchSetting(uid);
             if (!isDef(result)) return;
             res[uid] = result;
-            itemCompletionCallback({ type: 'progress' });
+            itemCompletionCallback({ type: 'progress', item: { uid } });
         };
         promises.push(fn());
     });
@@ -83,13 +83,13 @@ export const createUser = async (
     const resultOr = await createUserOnCanister(userInfo, [serializedFS]);
 
     handelCanisterErr(resultOr);
-    await storeSettingBatch(settings, ({ type }) => {
-        if (type === 'progress') itemCompletionCallback({ type });
+    await storeSettingBatch(settings, (args) => {
+        if (args.type === 'progress') itemCompletionCallback({ ...args });
     });
 
     if (!isDef(assets)) return;
-    await storeAssetsBatch(assets, true, ({ type }) => {
-        if (type === 'progress') itemCompletionCallback({ type });
+    await storeAssetsBatch(assets, true, (args) => {
+        if (args.type === 'progress') itemCompletionCallback({ ...args });
     });
 };
 

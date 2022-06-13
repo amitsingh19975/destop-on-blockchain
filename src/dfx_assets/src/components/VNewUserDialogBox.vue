@@ -25,9 +25,17 @@ export default {
                 </q-input>
             </q-card-section>
             <q-card-actions align="stretch">
-                <v-btn flat border label="submit" style="width:100%; height: 4rem;" :loading="userCreationInProgress"
-                    class="bg-green text-white" @click="createNewUser" :percentage="getLoadingPercentate"
-                    dark-percentage>
+                <v-btn flat border label="Submit" style="width:100%; height: 4rem;" :loading="userCreationInProgress"
+                    class="bg-green text-white" @click="createNewUser" :percentage="getLoadingPercentate" no-caps>
+                    <template #loading>
+                        <div class="fit progress-bar">
+                            <q-circular-progress show-value font-size="12px" :value="getLoadingPercentate" size="50px"
+                                :thickness="0.22" color="teal" track-color="grey-3">
+                                {{ Math.floor(getLoadingPercentate) }}%
+                            </q-circular-progress>
+                            <div class="ellipsis text-caption">{{ currentProcessingElement }}</div>
+                        </div>
+                    </template>
                 </v-btn>
             </q-card-actions>
         </q-card>
@@ -42,7 +50,9 @@ import { ICON_TYPES } from '../scripts/types';
 import VBtn from './VBtn.vue';
 import useUser from '../stores/user';
 import { notifyNeg } from '../scripts/notify';
-import { makeDir, makeFile } from '../scripts/fs';
+import {
+    IDirectory, makeDir, makeFile, makeRoot,
+} from '../scripts/fs';
 import { serializeUserSettings } from '../stores';
 import { UserInfo } from '../scripts/dfx/dfx.did.d';
 import { AcceptableType } from '../scripts/canisterHelper';
@@ -54,9 +64,10 @@ const firstname = ref('');
 const lastname = ref('');
 const userCreationInProgress = ref(false);
 const userStore = useUser();
-const { isNewUser, root } = storeToRefs(userStore);
+const { isNewUser, root: mainRoot } = storeToRefs(userStore);
 const itemsLoaded = ref(0);
 let totalItemsToBeLoaded = 1;
+const currentProcessingElement = ref('Initializing...');
 
 const options = computed((): string[] => ICON_TYPES.concat());
 const getAvatar = computed(() => ({
@@ -65,31 +76,31 @@ const getAvatar = computed(() => ({
 }));
 const getLoadingPercentate = computed(() => (itemsLoaded.value / totalItemsToBeLoaded) * 100);
 
-const constructDefaultFileSystem = () => {
-    makeDir({ name: 'user' }, root.value);
-    makeDir({ name: 'test' }, '/desktop', { root: root.value });
-    const videosDir = makeDir({ name: 'videos' }, root.value);
-    const imagesDir = makeDir({ name: 'images' }, root.value);
+const constructDefaultFileSystem = (root: IDirectory) => {
+    makeDir({ name: 'user' }, root);
+    makeDir({ name: 'test' }, '/desktop', { root });
+    const videosDir = makeDir({ name: 'videos' }, root);
+    const imagesDir = makeDir({ name: 'images' }, root);
 
     const text = makeFile({
         name: 'test.txt',
         useNameToGetExt: true,
-    }, root.value);
+    }, root);
 
     const music = makeFile({
-        name: 'Lofi Study.mp3',
+        name: 'Lofi Study',
         ext: 'mp3',
-    }, root.value);
+    }, root);
 
     const img = makeFile({
-        name: 'Screenshot.png',
+        name: 'Screenshot',
         ext: 'png',
-    }, root.value);
+    }, root);
 
     const json = makeFile({
         name: 'media.json',
         useNameToGetExt: true,
-    }, root.value);
+    }, root);
 
     const assets = [
         {
@@ -158,29 +169,38 @@ const createNewUser = async () => {
     itemsLoaded.value = 0;
     try {
         userCreationInProgress.value = true;
+        const tempRoot = makeRoot();
         const avatar = getAvatar.value;
         const settings = serializeUserSettings();
-        const assets = constructDefaultFileSystem();
+        const assets = constructDefaultFileSystem(tempRoot);
         const user: UserInfo = {
             avatar: [JSON.stringify(avatar)],
             firstname: firstname.value,
             lastname: lastname.value,
         };
-        await userStore.createNewUser(user, root.value, settings, assets, (args) => {
+        await userStore.createNewUser(user, tempRoot, settings, assets, (args) => {
             const { type } = args;
             if (type === 'itemEstimation') totalItemsToBeLoaded = args.items;
-            else itemsLoaded.value += 1;
+            else {
+                itemsLoaded.value += 1;
+                currentProcessingElement.value = args.item.name || args.item.uid;
+            }
         });
+        mainRoot.value = tempRoot;
     } catch (e) {
         notifyNeg(e);
     }
 
     userCreationInProgress.value = false;
-    // eslint-disable-next-line no-restricted-globals
-    location.reload();
 };
 
 </script>
 
 <style lang="scss" scoped>
+.progress-bar {
+    display: grid;
+    grid-template-columns: 4rem calc(100% - 4rem);
+    align-items: center;
+    padding: 0 1rem 0 1rem;
+}
 </style>

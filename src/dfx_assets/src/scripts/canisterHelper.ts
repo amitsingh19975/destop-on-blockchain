@@ -154,13 +154,13 @@ export const storeAssetsBatch = async (
     itemCompletionCallback({ type: 'itemEstimation', items: assets.length });
     assets.forEach((asset) => {
         if (set.has(asset.uid)) {
-            itemCompletionCallback({ type: 'progress' });
+            itemCompletionCallback({ type: 'progress', item: { uid: asset.uid, name: asset.name } });
             return;
         }
         set.add(asset.uid);
         const fn = async () => {
             await storeAssets(asset.uid, asset.name, asset.payload, overwrite);
-            itemCompletionCallback({ type: 'progress' });
+            itemCompletionCallback({ type: 'progress', item: { uid: asset.uid, name: asset.name } });
         };
         promises.push(fn());
     });
@@ -172,7 +172,7 @@ export const storeAssetsBatch = async (
     }
 };
 
-export const fetchAsset = async (uid: UIDType): Promise<AcceptableType> => {
+export const fetchAsset = async (uid: UIDType): Promise<{ info: ContentInfo, payload: AcceptableType }> => {
     const infoErr = await fetchAssetInfo(uid);
     handelCanisterErr(infoErr);
 
@@ -193,7 +193,7 @@ export const fetchAsset = async (uid: UIDType): Promise<AcceptableType> => {
     await Promise.all(promises);
 
     const flatenedArray = chunks.flat();
-    return parse({ blob: flatenedArray, type });
+    return { info, payload: parse({ blob: flatenedArray, type }) };
 };
 
 export const fetchAssetBatch = async (
@@ -206,14 +206,14 @@ export const fetchAssetBatch = async (
     itemCompletionCallback({ type: 'itemEstimation', items: uids.length });
     uids.forEach((uid) => {
         if (set.has(uid)) {
-            itemCompletionCallback({ type: 'progress' });
+            itemCompletionCallback({ type: 'progress', item: { uid } });
             return;
         }
         set.add(uid);
         const runFn = async () => {
-            const data = await fetchAsset(uid);
-            res[uid] = data;
-            itemCompletionCallback({ type: 'progress' });
+            const { info, payload } = await fetchAsset(uid);
+            res[uid] = payload;
+            itemCompletionCallback({ type: 'progress', item: { uid, name: info.name } });
         };
         promises.push(runFn());
     });
