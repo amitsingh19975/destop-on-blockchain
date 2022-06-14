@@ -5,6 +5,7 @@ import {
     IDirectory, IFile, IFileSystem, isDir, isFile, makeFileUsingPath, Path, propogateSize, removeChild,
 } from './fs';
 import { makeFsId } from './fs/utils';
+import { ItemCompletionCallbackType } from './types';
 
 type ErrorCallbackType = (error: unknown) => void;
 
@@ -116,9 +117,10 @@ export const openFile = async <T extends Type, R = unknown>(
     return res;
 };
 
-export const commitAll = async (
-    errCallback?: ErrorCallbackType,
-) => CacheManager.commitAllIfDataIsDirty(errCallback);
+export const commitAll = async (args?: {
+    errorCallback?: (e: unknown) => void,
+    itemCompletionCallback?: ItemCompletionCallbackType,
+}) => CacheManager.commitAllIfDataIsDirty(args);
 
 export const removeFSNode = async (node: IFileSystem) => {
     const parent = node.parent as IDirectory | undefined;

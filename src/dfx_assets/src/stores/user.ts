@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia';
 import { AuthClient } from '@dfinity/auth-client';
 import { Actor } from '@dfinity/agent';
-import { Ref, ref, watch } from 'vue';
+import {
+    Ref, ref, shallowReactive, watch,
+} from 'vue';
+import { Loading } from 'quasar';
 import { IIcon } from '../scripts/types';
 import { dfx } from '../scripts/dfx';
 import { isDef, persistentStorage } from '../scripts/basic';
@@ -10,8 +13,8 @@ import {
 } from '../scripts/user';
 import ROOT, { deserialize, IDirectory } from '../scripts/fs';
 import { deserializeUserSettings, serializeUserSettings, setSettingsWatcher } from '.';
-import { CacheManager } from '../scripts/cacheManager';
 import { notifyNeg } from '../scripts/notify';
+import { commitAll } from '../scripts/storage';
 
 export interface IUser {
     uid: string;
@@ -35,7 +38,18 @@ const useUser = defineStore('useUserStore', () => {
     const root = ref<IDirectory>(ROOT);
     const isLogOutInProcess = ref(false);
     const loadingPercentage = ref(0);
-    let autoSaveIntervalId = null as (null | ReturnType<typeof setInterval>);
+    const saveingProgressPercentage = ref(0);
+    const autoSaveConfig = shallowReactive<{
+        autoSaveIntervalId: null | ReturnType<typeof setInterval>,
+        autoSaveTimerId: null | ReturnType<typeof setInterval>,
+        autoSaveTimer: number | null,
+        isAutoSavingInProcess: boolean,
+    }>({
+        autoSaveIntervalId: null,
+        autoSaveTimerId: null,
+        autoSaveTimer: null,
+        isAutoSavingInProcess: false,
+    });
 
     const setUserInfoIfExist = async () => {
         const tempUserInfo = await getUserInfo();
@@ -52,10 +66,12 @@ const useUser = defineStore('useUserStore', () => {
         return {
             _currItem: 0,
             next(): void {
+                if (this._currItem === total) return;
                 this._currItem += 1;
                 loadingVar.value = percentageCal(this._currItem, total);
             },
             complete(): void {
+                this._currItem = total;
                 loadingVar.value = 100;
             },
         };
@@ -78,39 +94,81 @@ const useUser = defineStore('useUserStore', () => {
     };
 
     const saveSytemData = async () => {
-        await CacheManager.flush();
+        autoSaveConfig.isAutoSavingInProcess = true;
+        let per = { next: () => { }, complete: () => { } } as ReturnType<typeof progressObj>;
+        await commitAll({
+            itemCompletionCallback: (args) => {
+                if (args.type === 'itemEstimation') {
+                    per = progressObj(saveingProgressPercentage, args.items);
+                    return;
+                }
+                per.next();
+            },
+        });
         await updateFileSystem();
+        per.next();
         await storeSettingBatch(serializeUserSettings());
+        per.complete();
+        autoSaveConfig.isAutoSavingInProcess = false;
     };
 
     const startAutoSaveTimer = (time: number = 5, prefix: 'hr' | 'min' | 'sec' = 'min') => { // 5min
         if (!isLoggedIn.value) return;
         const normalizeTime: number = (time * 1000) * (prefix === 'sec' ? 1 : 60 * (prefix === 'hr' ? 60 : 1));
-        if (isDef(autoSaveIntervalId)) {
-            clearInterval(autoSaveIntervalId);
-            autoSaveIntervalId = null;
+        if (isDef(autoSaveConfig.autoSaveIntervalId)) {
+            clearInterval(autoSaveConfig.autoSaveIntervalId);
+            autoSaveConfig.autoSaveIntervalId = null;
         }
-        autoSaveIntervalId = setInterval(async () => {
-            await saveSytemData();
+
+        autoSaveConfig.autoSaveTimer = normalizeTime;
+        autoSaveConfig.autoSaveTimerId = setInterval(async () => {
+            if (!isDef(autoSaveConfig.autoSaveTimer)) return;
+            if (autoSaveConfig.isAutoSavingInProcess || autoSaveConfig.autoSaveTimer <= 0) {
+                autoSaveConfig.autoSaveTimer = normalizeTime;
+                return;
+            }
+            autoSaveConfig.autoSaveTimer -= 1000;
+        }, 1000);
+
+        autoSaveConfig.autoSaveIntervalId = setInterval(async () => {
+            if (!autoSaveConfig.isAutoSavingInProcess) await saveSytemData();
+            if (isDef(autoSaveConfig.autoSaveTimerId)) clearInterval(autoSaveConfig.autoSaveTimerId);
         }, normalizeTime);
+    };
+
+    const stopAutoSaveTimer = () => {
+        if (isDef(autoSaveConfig.autoSaveIntervalId)) {
+            clearInterval(autoSaveConfig.autoSaveIntervalId);
+        }
+        if (isDef(autoSaveConfig.autoSaveTimerId)) {
+            clearInterval(autoSaveConfig.autoSaveTimerId);
+        }
+
+        autoSaveConfig.autoSaveTimerId = null;
+        autoSaveConfig.autoSaveIntervalId = null;
+        autoSaveConfig.autoSaveTimer = null;
     };
 
     const logout = async (): Promise<boolean> => {
         if (!isDef(_authClient)) return true;
         isLogOutInProcess.value = true;
+        Loading.show({
+            message: 'Logging Out, please wait...',
+        });
         try {
-            await saveSytemData();
+            window.onbeforeunload = null;
+            stopAutoSaveTimer();
+            if (!autoSaveConfig.isAutoSavingInProcess) await saveSytemData();
             await _authClient.logout();
+            isLoggedIn.value = false;
         } catch (e) {
             notifyNeg(e, { pre: 'Encoutered error while logout: ' });
+        } finally {
             isLogOutInProcess.value = false;
-            return false;
+            Loading.hide();
         }
-        userInfo.value = defaultUserInfo();
-        isLogOutInProcess.value = false;
-        isLoggedIn.value = false;
-        window?.location.reload();
-        return true;
+        if (!isLoggedIn.value) window?.location.reload();
+        return !isLoggedIn.value;
     };
 
     const initAfterProperLogin = async () => {
@@ -221,12 +279,9 @@ const useUser = defineStore('useUserStore', () => {
         updateFileSystem,
         saveSytemData,
         startAutoSaveTimer,
-        stopAutoSaveTimer: () => {
-            if (isDef(autoSaveIntervalId)) {
-                clearInterval(autoSaveIntervalId);
-                autoSaveIntervalId = null;
-            }
-        },
+        stopAutoSaveTimer,
+        autoSaveConfig,
+        saveingProgressPercentage,
     };
 });
 

@@ -48,8 +48,10 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .item {
-    display: grid;
-    grid-template-columns: 0.1fr 1fr;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
 
     &>*:last-child {
         display: flex;

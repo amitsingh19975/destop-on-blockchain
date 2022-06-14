@@ -4,6 +4,7 @@ import {
 } from './canisterHelper';
 import { notifyNeg } from './notify';
 import { WriteType } from './storage';
+import { ItemCompletionCallbackType } from './types';
 import {
     didTimeExpired, isBlob,
 } from './utils';
@@ -36,7 +37,7 @@ type AssetCommitCallbacksType = {
 
 const CACHED_DATA = new Map<UIDType, IItem>();
 const FLUSH_TIMER = 1000 * 60 * 10; // 10 mins;
-const FLUSH_ITEM_THAT_HAS_RW_TIME_LESS_OR_EQUAL_IN_MINS = 30; // 5 mins;
+const FLUSH_ITEM_THAT_HAS_RW_TIME_LESS_OR_EQUAL_IN_MINS = 30; // 30 mins;
 
 const typeToHumanReadableType = (data: unknown): AcceptableType => {
     if (typeof data === 'string') return 'String';
@@ -235,25 +236,36 @@ export namespace CacheManager {
         }
     };
 
-    export const commitAllIfDataIsDirty = async (errorCallback?: (e: unknown) => void) => {
+    export const commitAllIfDataIsDirty = async (args?: {
+        errorCallback?: (e: unknown) => void,
+        itemCompletionCallback?: ItemCompletionCallbackType,
+    }) => {
+        const {
+            errorCallback,
+            itemCompletionCallback = () => { },
+        } = args || {};
         try {
             const assets = filter((uid, meta) => meta.isDirty)
                 .map(([uid, item]) => ({ uid, name: item.name, payload: item.data }));
-            await storeAssetsBatch(assets);
+            await storeAssetsBatch(assets, true, itemCompletionCallback);
         } catch (e) {
             if (errorCallback) errorCallback(e);
             else throw e;
         }
     };
 
-    export const flush = async (uid?: UIDType) => {
+    export const flush = async (uid?: UIDType, itemCompletionCallback: ItemCompletionCallbackType = () => { }) => {
         if (isDef(uid)) {
             const data = CACHED_DATA.get(uid);
             if (!isDef(data)) return;
-            if (data.meta.isDirty) await storeAssets(uid, data.name, data.data, true);
+            if (data.meta.isDirty) {
+                itemCompletionCallback({ type: 'itemEstimation', items: 1 });
+                await storeAssets(uid, data.name, data.data, true);
+                itemCompletionCallback({ type: 'progress', item: { uid, name: data.name } });
+            }
             CACHED_DATA.delete(uid);
         } else {
-            await commitAllIfDataIsDirty();
+            await commitAllIfDataIsDirty({ itemCompletionCallback });
             CACHED_DATA.clear();
         }
     };

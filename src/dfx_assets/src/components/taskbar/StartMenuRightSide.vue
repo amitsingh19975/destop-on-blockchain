@@ -27,13 +27,32 @@ export default {
             </q-menu>
         </q-item>
         <q-separator />
+        <q-item clickable v-close-popup @click="handleClick('SaveSystemData')">
+            <v-menu-item label="Save System Data" icon="save">
+                <template #after>
+                    <div v-if="showAutoSaveText" style="margin-left: 0.5rem;">
+                        <span class="text-grey" v-if="!autoSaveConfig.isAutoSavingInProcess">
+                            Auto saving in... {{ getAutoSaveText }}
+                        </span>
+                        <span class="text-grey" v-else>
+                            Saving in progress [{{ Math.floor(saveingProgressPercentage) }}%]
+                        </span>
+                    </div>
+                </template>
+            </v-menu-item>
+        </q-item>
+        <q-separator />
     </q-list>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
+import { computed } from 'vue';
 import { isDef } from '../../scripts/basic';
+import { div } from '../../scripts/utils';
+import useCanisterManager from '../../stores/canisterManager';
 import useIcons from '../../stores/icons';
+import useUser from '../../stores/user';
 import useWindowManager from '../../stores/windowManager';
 import { ComponentType, getAllApps } from '../../windowApp';
 import VMenuItem from '../VMenuItem.vue';
@@ -41,8 +60,27 @@ import VMenuItem from '../VMenuItem.vue';
 
 const apps = getAllApps();
 const { compIcon } = storeToRefs(useIcons());
+const { autoSaveConfig } = useUser();
+const { saveingProgressPercentage } = storeToRefs(useUser());
 
-const handleClick = (label: string, app?: typeof apps[0]) => {
+const getAutoSaveText = computed(() => {
+    if (!isDef(autoSaveConfig.autoSaveTimer)) return '';
+    const time = autoSaveConfig.autoSaveTimer;
+
+    const tsec = time / 1000;
+
+    const { q: tmin, r: sec } = div(tsec, 60);
+    if (tmin === 0) return `${sec} secs`;
+
+    const { q: hr, r: min } = div(tmin, 60);
+
+    if (hr === 0) return `${tmin}.${sec} mins`;
+    return `${hr}.${min} hr`;
+});
+
+const showAutoSaveText = computed(() => isDef(autoSaveConfig.autoSaveTimer));
+
+const handleClick = async (label: string, app?: typeof apps[0]) => {
     const windowManagerStore = useWindowManager();
     switch (label) {
         case 'Profile': {
@@ -67,6 +105,10 @@ const handleClick = (label: string, app?: typeof apps[0]) => {
                         isSelf: true,
                     },
                 });
+            break;
+        }
+        case 'SaveSystemData': {
+            await useUser().saveSytemData();
             break;
         }
         default: break;
