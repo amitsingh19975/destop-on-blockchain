@@ -35,6 +35,7 @@ const useUser = defineStore('useUserStore', () => {
     const root = ref<IDirectory>(ROOT);
     const isLogOutInProcess = ref(false);
     const loadingPercentage = ref(0);
+    let autoSaveIntervalId = null as (null | ReturnType<typeof setInterval>);
 
     const setUserInfoIfExist = async () => {
         const tempUserInfo = await getUserInfo();
@@ -76,14 +77,30 @@ const useUser = defineStore('useUserStore', () => {
         storeFileSystem(root.value);
     };
 
+    const saveSytemData = async () => {
+        await CacheManager.flush();
+        await updateFileSystem();
+        await storeSettingBatch(serializeUserSettings());
+    };
+
+    const startAutoSaveTimer = (time: number = 5, prefix: 'hr' | 'min' | 'sec' = 'min') => { // 5min
+        if (!isLoggedIn.value) return;
+        const normalizeTime: number = (time * 1000) * (prefix === 'sec' ? 1 : 60 * (prefix === 'hr' ? 60 : 1));
+        if (isDef(autoSaveIntervalId)) {
+            clearInterval(autoSaveIntervalId);
+            autoSaveIntervalId = null;
+        }
+        autoSaveIntervalId = setInterval(async () => {
+            await saveSytemData();
+        }, normalizeTime);
+    };
+
     const logout = async (): Promise<boolean> => {
         if (!isDef(_authClient)) return true;
         isLogOutInProcess.value = true;
         try {
+            await saveSytemData();
             await _authClient.logout();
-            await CacheManager.flush();
-            await updateFileSystem();
-            await storeSettingBatch(serializeUserSettings());
         } catch (e) {
             notifyNeg(e, { pre: 'Encoutered error while logout: ' });
             isLogOutInProcess.value = false;
@@ -92,16 +109,16 @@ const useUser = defineStore('useUserStore', () => {
         userInfo.value = defaultUserInfo();
         isLogOutInProcess.value = false;
         isLoggedIn.value = false;
-        // eslint-disable-next-line no-restricted-globals
-        location.reload();
+        window?.location.reload();
         return true;
     };
 
     const initAfterProperLogin = async () => {
         if (isNewUser.value) return;
-        await persistentStorage();
+        // await persistentStorage();
         setSettingsWatcher();
         watch(root, () => updateFileSystem(), { deep: true });
+        startAutoSaveTimer();
     };
 
     const handleAuthenticated = async () => {
@@ -116,6 +133,15 @@ const useUser = defineStore('useUserStore', () => {
         await setUserInfoIfExist();
         if (!isNewUser.value) await initSystem();
         await initAfterProperLogin();
+        if (isDef(window)) {
+            window.onbeforeunload = (e: Event) => {
+                e.preventDefault();
+                if (isLoggedIn.value) {
+                    return 'Are you sure? You may lose data that has not be committed to the backend! To avoid this, please logout.';
+                }
+                return null;
+            };
+        }
     };
 
     const setLoggedInState = async (): Promise<void> => {
@@ -193,6 +219,14 @@ const useUser = defineStore('useUserStore', () => {
         isLogOutInProcess,
         loadingPercentage,
         updateFileSystem,
+        saveSytemData,
+        startAutoSaveTimer,
+        stopAutoSaveTimer: () => {
+            if (isDef(autoSaveIntervalId)) {
+                clearInterval(autoSaveIntervalId);
+                autoSaveIntervalId = null;
+            }
+        },
     };
 });
 

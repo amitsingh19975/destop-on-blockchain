@@ -1,6 +1,8 @@
 import { UserInfo } from './dfx/dfx.did.d';
 import { dfx } from './dfx';
-import { IFileSystem, serialize } from './fs';
+import {
+    IFileSystem, isFile, propogateSize, serialize,
+} from './fs';
 import { GenericObjType, isDef } from './basic';
 import {
     AcceptableType, handelCanisterErr, storeAssetsBatch, UIDType,
@@ -9,6 +11,7 @@ import { ISerializedUserSetting } from '../stores';
 import { ItemCompletionCallbackType } from './types';
 import { IUser } from '../stores/user';
 import useCanisterManager from '../stores/canisterManager';
+import { findUsingUid } from './fs/utils';
 
 const {
     createUser: createUserOnCanister,
@@ -114,6 +117,9 @@ export const createUser = async (
     if (!isDef(assets)) return;
     await storeAssetsBatch(assets, true, (args) => {
         if (args.type === 'progress') itemCompletionCallback({ ...args });
+    }, (uid, size) => {
+        const node = findUsingUid(fs, uid);
+        if (isDef(node)) propogateSize(size, node);
     });
 };
 

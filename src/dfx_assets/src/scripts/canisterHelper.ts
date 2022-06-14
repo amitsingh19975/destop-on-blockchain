@@ -42,11 +42,11 @@ const CANISTER_WORKER_POOL = constructWorkerPool(MAX_HARDWARE_CONCURRENCY);
 
 const CUSTOM_STRING_MIME_TYPE = 'amt:string' as const;
 
-export const normalizePayload = async (data: AcceptableType): Promise<{ blob: number[], type: string }> => {
+export const normalizePayload = async (data: AcceptableType): Promise<{ blob: Uint8Array, type: string }> => {
     const buffer = data instanceof Blob ? new Uint8Array(await data.arrayBuffer()) : TEXT_ENCODER.encode(JSON.stringify(data));
     const type = data instanceof Blob ? data.type : CUSTOM_STRING_MIME_TYPE;
     return {
-        blob: [...buffer],
+        blob: buffer,
         type,
     };
 };
@@ -139,7 +139,7 @@ export const storeAssets = async (
         const workerId = j % CANISTER_WORKER_POOL.length;
         const temp: ICanisterAddChunkPayload = {
             chunk: {
-                chunk,
+                chunk: [...chunk],
                 chunkId: BigInt(j),
             },
             uid,
@@ -167,6 +167,7 @@ export const storeAssetsBatch = async (
     assets: { uid: UIDType, name: string, payload: AcceptableType }[],
     overwrite = false,
     itemCompletionCallback: ItemCompletionCallbackType = () => { },
+    sizeCallback: (uid: UIDType, size: number) => void = () => { },
 ) => {
     const promises = [] as Promise<void>[];
     const set = new Set<UIDType>();
@@ -178,7 +179,7 @@ export const storeAssetsBatch = async (
         }
         set.add(asset.uid);
         const fn = async () => {
-            await storeAssets(asset.uid, asset.name, asset.payload, overwrite);
+            await storeAssets(asset.uid, asset.name, asset.payload, overwrite, (size: number) => sizeCallback(asset.uid, size));
             itemCompletionCallback({ type: 'progress', item: { uid: asset.uid, name: asset.name } });
         };
         promises.push(fn());

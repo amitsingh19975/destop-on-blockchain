@@ -2,6 +2,7 @@ import {
     IDirectory, IFileSystem, isDir, NodeKind, removeChild,
 } from '.';
 import { isDef } from '../basic';
+import { UIDType } from '../canisterHelper';
 import { removeFSNode } from '../storage';
 
 type ComponentKind = 'RootDir' | 'ParDir' | 'CurDir' | 'Normal';
@@ -81,4 +82,17 @@ export const removeIfNotCommitted = (node: IFileSystem): IFileSystem | undefined
     }
     if (isDir(node)) Object.values(node._children).forEach(removeIfNotCommitted);
     return node;
+};
+
+export const findUsingUid = (root: IFileSystem | undefined, uid: UIDType): IFileSystem | undefined => {
+    if (!isDef(root)) return undefined;
+    if (root._uid === uid) return root;
+    if (isDir(root)) {
+        const vals = Object.values(root._children);
+        for (let i = 0; i < vals.length; i += 1) {
+            const el = findUsingUid(vals[i], uid);
+            if (isDef(el)) return el;
+        }
+    }
+    return undefined;
 };
