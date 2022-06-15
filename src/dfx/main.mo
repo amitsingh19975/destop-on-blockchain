@@ -7,6 +7,7 @@ import Result "mo:base/Result";
 import Text "mo:base/Text";
 import Trie "mo:base/Trie";
 import Types "types";
+import Array "mo:base/Array";
 
 actor OperatingSystem{
 
@@ -15,6 +16,16 @@ actor OperatingSystem{
     type Assets = Assets.Assets;
 
     let mAssets: Assets = Assets.Assets(10, 10);
+
+    type StableUserType = {
+        principal: Principal;
+        userInfo: Types.UserInfo;
+        fileSystem: Text;
+        settings: [(Types.UidType, Text)];
+    };
+
+    stable var _stableUserArray: [StableUserType] = [];
+    stable var _stableAssetsArray: [(Types.UidType, Assets.FrozenInternalContent)] = [];
 
     public shared({caller}) func initiateAssetUpload(contentInfo: Types.ContentInfo, replace: ?Bool): async Result<()> {
         mAssets.initContent(caller, contentInfo, replace)
@@ -40,13 +51,13 @@ actor OperatingSystem{
         mAssets.fetchByChunkId(caller, uid, chunkId)
     };
 
-    public query func showAllInAssetTempBuffer(): async [(Text, {info: Types.ContentInfo; buffer: [?Types.ContentChunk]})] {
-        mAssets.showAllInTempBuffer()
-    };
+    // public query func showAllInAssetTempBuffer(): async [(Text, {info: Types.ContentInfo; buffer: [?Types.ContentChunk]})] {
+    //     mAssets.showAllInTempBuffer()
+    // };
 
-    public query func showAllInAssetPermBuffer(): async [(Text, {info: Types.ContentInfo; buffer: [Types.ContentChunk]})] {
-        mAssets.showAllInPermBuffer()
-    };
+    // public query func showAllInAssetPermBuffer(): async [(Text, {info: Types.ContentInfo; buffer: [Types.ContentChunk]})] {
+    //     mAssets.showAllInPermBuffer()
+    // };
 
     class User(uidArg: Types.UidType, userInfoArg: Types.UserInfo, fileSystemArg: Types.SerializedJsonType, settingsArgs: Types.Settings) {
         public let uid: Types.UidType = uidArg;
@@ -60,31 +71,11 @@ actor OperatingSystem{
 
     func userKey(t: Principal) : Trie.Key<Principal> { { key = t; hash = Principal.hash(t) } };
 
-    // TODO: remove this in the future.
+    // function for debugging
     public shared func reset(): async () {
         mUsersMapping:= Trie.empty();
         mAssets.reset();
         return ();
-    };
-
-    type DebugUserInfo = {
-        principal: Principal;
-        userInfo: Types.UserInfo;
-        fileSystem: Text;
-        settings: [(Types.UidType, Text)];
-    };
-
-    public query func showAllUsers(): async [DebugUserInfo] {
-        let iter = Trie.iter(mUsersMapping);
-        let normalizedData = Iter.map(iter, func ((k: Principal, v: User)): DebugUserInfo {
-            {
-                principal = k;
-                userInfo = v.userInfo;
-                fileSystem = v.fileSystem;
-                settings = Iter.toArray(v.settings.entries());
-            }
-        });
-        return Iter.toArray(normalizedData);
     };
 
     func createUserMapping(caller: Principal, user: User): Result<()> {
@@ -108,9 +99,9 @@ actor OperatingSystem{
         userInfo: Types.UserInfo,
         fileSystem: ?Types.SerializedJsonType,
     ) : async Result<()>{
-        // if (Principal.isAnonymous(caller) == true) {
-        //     return #err(#anonymous("Anonymous users are not allowed"));
-        // };
+        if (Principal.isAnonymous(caller) == true) {
+            return #err(#anonymous("Anonymous users are not allowed"));
+        };
 
         let uid = Principal.toText(caller);
         let user = User(uid, userInfo, Option.get(fileSystem, ""), HashMap.HashMap(10, Text.equal, Text.hash));
@@ -199,6 +190,38 @@ actor OperatingSystem{
             };
             case(#err(err)) #err(err)
         };
+    };
+
+    func _serializeUserData(): [StableUserType] {
+        let iter = Trie.iter(mUsersMapping);
+        let normalizedData = Iter.map(iter, func ((k: Principal, v: User)): StableUserType {
+            {
+                principal = k;
+                userInfo = v.userInfo;
+                fileSystem = v.fileSystem;
+                settings = Iter.toArray(v.settings.entries());
+            }
+        });
+        return Iter.toArray(normalizedData);
+    };
+
+    func _deserializeUserData(): () {
+        for ({principal; userInfo; fileSystem; settings } in _stableUserArray.vals()) {
+            let user = User(Principal.toText(principal), userInfo, fileSystem, HashMap.fromIter(settings.vals(), 10, Text.equal, Text.hash));
+            updateUserMapping(principal, user);
+        };
+    };
+
+    system func preupgrade() {
+        _stableUserArray := _serializeUserData();
+        _stableAssetsArray := mAssets._serializeUserAssets();
+    };
+
+    system func postupgrade() {
+        _deserializeUserData();
+        mAssets._deserializeUserAssets(_stableAssetsArray);
+        _stableUserArray := [];
+        _stableAssetsArray := [];
     };
 
 };

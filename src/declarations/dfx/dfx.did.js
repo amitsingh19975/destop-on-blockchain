@@ -39,12 +39,6 @@ export const idlFactory = ({ IDL }) => {
     'avatar' : IDL.Opt(IDL.Text),
   });
   const Result_1 = IDL.Variant({ 'ok' : UserInfoWithUid, 'err' : Error });
-  const DebugUserInfo = IDL.Record({
-    'userInfo' : UserInfo,
-    'principal' : IDL.Principal,
-    'settings' : IDL.Vec(IDL.Tuple(UidType, IDL.Text)),
-    'fileSystem' : IDL.Text,
-  });
   return IDL.Service({
     'addAssetChunk' : IDL.Func([UidType, ContentChunk], [Result], []),
     'commitAssetChunk' : IDL.Func([UidType], [Result], []),
@@ -66,37 +60,6 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'reset' : IDL.Func([], [], []),
-    'showAllInAssetPermBuffer' : IDL.Func(
-        [],
-        [
-          IDL.Vec(
-            IDL.Tuple(
-              IDL.Text,
-              IDL.Record({
-                'info' : ContentInfo,
-                'buffer' : IDL.Vec(ContentChunk),
-              }),
-            )
-          ),
-        ],
-        ['query'],
-      ),
-    'showAllInAssetTempBuffer' : IDL.Func(
-        [],
-        [
-          IDL.Vec(
-            IDL.Tuple(
-              IDL.Text,
-              IDL.Record({
-                'info' : ContentInfo,
-                'buffer' : IDL.Vec(IDL.Opt(ContentChunk)),
-              }),
-            )
-          ),
-        ],
-        ['query'],
-      ),
-    'showAllUsers' : IDL.Func([], [IDL.Vec(DebugUserInfo)], ['query']),
     'updateFileSystem' : IDL.Func([SerializedJsonType], [Result], []),
     'updateSetting' : IDL.Func([UidType, SerializedJsonType], [Result], []),
     'updateUserInfo' : IDL.Func([UserInfo], [Result], []),

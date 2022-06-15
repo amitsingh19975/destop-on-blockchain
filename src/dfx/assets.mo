@@ -1,28 +1,30 @@
 import Array "mo:base/Array";
-import Principal "mo:base/Principal";
-import Text "mo:base/Text";
-import HashMap "mo:base/HashMap";
-import Result "mo:base/Result";
-import Option "mo:base/Option";
-import Nat "mo:base/Nat";
-import Nat8 "mo:base/Nat8";
 import Blob "mo:base/Blob";
 import Buffer "mo:base/Buffer";
 import Debug "mo:base/Debug";
+import HashMap "mo:base/HashMap";
+import Iter "mo:base/Iter";
+import Nat "mo:base/Nat";
+import Nat8 "mo:base/Nat8";
+import Option "mo:base/Option";
+import Principal "mo:base/Principal";
+import Result "mo:base/Result";
+import Text "mo:base/Text";
 import Types "types";
 
 module {
 
+    type InternalContentImpl<T> = {
+        info: Types.ContentInfo;
+        buffer: T;
+    };
+    public type FrozenInternalContent = InternalContentImpl<[Types.ContentChunk]>;
+
     public class Assets(initUsers: Nat, initItems: Nat){
 
         type Result<V> = Types.Result<V>;
-        type InternalContentImpl<T> = {
-            info: Types.ContentInfo;
-            buffer: T;
-        };
 
         type InternalContent = InternalContentImpl<[var ?Types.ContentChunk]>;
-        type FrozenInternalContent = InternalContentImpl<[Types.ContentChunk]>;
 
         type UidToInternalContentMapping = HashMap.HashMap<Types.UidType, FrozenInternalContent>;
 
@@ -163,7 +165,15 @@ module {
             mUidToInternalContent.delete(newUid);
             mStreaming.delete(newUid);
             #ok(())
-        }
+        };
+
+        public func _serializeUserAssets(): [(Types.UidType, FrozenInternalContent)] {
+            Iter.toArray(mUidToInternalContent.entries())
+        };
+
+        public func _deserializeUserAssets(assets: [(Types.UidType, FrozenInternalContent)]): () {
+            mUidToInternalContent := HashMap.fromIter(assets.vals(), initItems, Text.equal, Text.hash)
+        };
     }
 
 
