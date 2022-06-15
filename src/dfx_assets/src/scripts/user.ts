@@ -1,11 +1,12 @@
 import { UserInfo } from './dfx/dfx.did.d';
 import { dfx } from './dfx';
 import {
-    IFileSystem, isFile, propogateSize, serialize,
+    deserialize,
+    IFileSystem, propogateSize, serialize,
 } from './fs';
 import { GenericObjType, isDef } from './basic';
 import {
-    AcceptableType, handelCanisterErr, storeAssetsBatch, UIDType,
+    AcceptableType, handelCanisterErr, storeAssetsBatch, UIDType, _callRegisteredCallback,
 } from './canisterHelper';
 import { ISerializedUserSetting } from '../stores';
 import { ItemCompletionCallbackType } from './types';
@@ -29,8 +30,9 @@ export const storeSetting = async (uid: keyof ISerializedUserSetting, payload: G
     });
     const normalizeData = JSON.stringify(payload);
     const resultOr = await updateSetting(uid, normalizeData);
-    handelCanisterErr(resultOr, uid);
+    if (!handelCanisterErr(resultOr, uid, true)) return;
     useCanisterManager().setState(uid, 'success');
+    _callRegisteredCallback(uid, { name: uid, uid });
 };
 
 export const storeSettingBatch = async (
@@ -151,7 +153,7 @@ export const fetchFileSystem = async (): Promise<IFileSystem> => {
         if (!('ok' in result)) {
             throw new Error('[fetchFileSystem]: invalid response payload');
         }
-        const response = JSON.parse(result.ok) as IFileSystem;
+        const response = deserialize(JSON.parse(result.ok)) as IFileSystem;
         useCanisterManager().setState('fs', 'success');
         return response;
     } catch (e) {
@@ -160,7 +162,7 @@ export const fetchFileSystem = async (): Promise<IFileSystem> => {
     }
 };
 
-export const storeFileSystem = async (fs: IFileSystem) => {
+export const storeSerializedFileSystem = async (serializedFS: string) => {
     useCanisterManager().addItem('fs', {
         type: 'fs',
         kind: 'upload',
@@ -168,14 +170,18 @@ export const storeFileSystem = async (fs: IFileSystem) => {
         time: Date.now(),
     });
     try {
-        const serializedFS = JSON.stringify(serialize(fs));
         const result = await updateFileSystem(serializedFS);
-        handelCanisterErr(result, 'fs');
+        if (!handelCanisterErr(result, 'fs', true)) return;
         useCanisterManager().setState('fs', 'success');
+        _callRegisteredCallback('fs', { name: 'Filesystem', uid: 'fs' });
     } catch (e) {
         useCanisterManager().setState('fs', 'failed');
         throw e;
     }
+};
+
+export const storeFileSystem = async (fs: IFileSystem) => {
+    await storeSerializedFileSystem(JSON.stringify(serialize(fs)));
 };
 
 export const updateUserInfo = async (user: IUser) => {

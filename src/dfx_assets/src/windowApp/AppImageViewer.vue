@@ -50,7 +50,7 @@ export default defineComponent({
                             if (!isDef(self.imgRef)) return;
                             const shape = {
                                 width: self.imgRef.width,
-                                height: self.imgRef.height + 85,
+                                height: self.imgRef.height + 70,
                             } as ShapeType;
                             self.resize(shape);
                         },
@@ -134,6 +134,11 @@ export default defineComponent({
         linear-gradient(135deg, transparent 75%, #ccc 75%);
     background-size: 25px 25px;
     /* Must be a square */
-    background-position: 0 0, 12.5px 0, 12.5px -12.5px, 0px 12.5px
+    background-position: 0 0, 12.5px 0, 12.5px -12.5px, 0px 12.5px;
+
+    &>img {
+        max-width: 100%;
+        max-height: 100%;
+    }
 }
 </style>

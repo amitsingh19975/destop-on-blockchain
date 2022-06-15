@@ -9,19 +9,22 @@
             <v-icon class="cursor-pointer" @click="handleClick" @dblclick="handleDblClick" :icon="icon" square
                 :size="`${fontSize * sizeFactor}rem`" font-size="90%" v-click-outside="clickOutsideHandler"
                 style="text-shadow: 0px 0px 2px black" :loading="isLoading"></v-icon>
+            <!-- <q-badge class="absolute progress" style="top: 0; right: 0" v-if="!showProgressBar" rounded color="red" /> -->
+            <q-circular-progress v-if="showProgressBar" show-value class="absolute progress" :value="progress"
+                size="30px" :thickness="1" color="green" track-color="grey-8">
+                {{ Math.floor(progress) }}%
+                <q-tooltip v-if="showAutoSaveText">Start progress in {{ getAutoSaveText }}
+                </q-tooltip>
+            </q-circular-progress>
         </div>
-        <div :class="['item-text no-scroll text-weight-medium', showProgressBar ? 'full-width' : '']"
-            :style="getTextStyle" ref="itemText">
+        <div class="item-text no-scroll text-weight-medium" :style="getTextStyle" ref="itemText">
             <div :class="{
                 ellipsis: !editMode,
                 'no-user-select': !editMode,
                 'user-select': editMode,
             }" :contenteditable="editMode" @input="updateLabel($event)" @click="handleClick" @dblclick="handleDblClick"
-                @keydown.enter.prevent="submit" v-if="!showProgressBar">
+                @keydown.enter.prevent="submit">
                 {{ node.name }}
-            </div>
-            <div v-else class="full-width" style="padding: 0 1rem 0 1rem">
-                <q-linear-progress size="10px" :value="progress" color="blue-8" />
             </div>
             <q-tooltip>{{ node.name }}</q-tooltip>
         </div>
@@ -50,6 +53,8 @@ import { readFile } from '../../scripts/storage';
 import { isDef } from '../../scripts/basic';
 import { isMIMEType, readAsDataURL, validateImage } from '../../scripts/mediaUtils';
 import useCanisterManager from '../../stores/canisterManager';
+import useUser from '../../stores/user';
+import { div } from '../../scripts/utils';
 
 const BOX_SHAPE = {
     width: 130,
@@ -105,17 +110,34 @@ const progress = computed(() => {
     return 0;
 });
 
+const { autoSaveConfig } = useUser();
+
+const getAutoSaveText = computed(() => {
+    if (!isDef(autoSaveConfig.autoSaveTimer)) return '';
+    const time = autoSaveConfig.autoSaveTimer;
+
+    const tsec = time / 1000;
+
+    const { q: tmin, r: sec } = div(tsec, 60);
+    if (tmin === 0) return `${sec} secs`;
+
+    const { q: hr, r: min } = div(tmin, 60);
+
+    if (hr === 0) return `${tmin}.${sec} mins`;
+    return `${hr}.${min} hr`;
+});
+
+const showAutoSaveText = computed(() => isDef(autoSaveConfig.autoSaveTimer));
+
 const handleClick = () => {
-    if (showProgressBar.value) return;
     emits('click');
 };
 
 const handleDblClick = () => {
-    if (showProgressBar.value) return;
     emits('dblclick');
 };
 
-onMounted(async () => {
+const getIcon = async () => {
     const loaded = () => {
         isLoading.value = false;
     };
@@ -160,6 +182,14 @@ onMounted(async () => {
         data: url,
     };
     loaded();
+};
+
+watch(showProgressBar, async (val) => {
+    if (!val) await getIcon();
+});
+
+onMounted(async () => {
+    await getIcon();
 });
 
 const windowFontSizeOr = window
@@ -202,7 +232,7 @@ const getIconStyle = computed<CSSProperties>(() => {
     return {
         width: `${width * props.sizeFactor}px`,
         height: `${height * props.sizeFactor}px`,
-        opacity: showProgressBar.value ? '0.5' : '1',
+        opacity: showProgressBar.value ? '0.8' : '1',
     };
 });
 const getTextBorder = computed<string | undefined>(() => {
@@ -294,5 +324,10 @@ export default {
             border: 1px solid rgba($color: #000000, $alpha: 0.8);
         }
     }
+}
+
+.progress {
+    top: 0;
+    right: 0;
 }
 </style>

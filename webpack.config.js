@@ -73,6 +73,15 @@ module.exports = {
         minimizer: [new TerserPlugin()],
         // runtimeChunk: true,
     },
+    experiments: {
+        // asyncWebAssembly: true,
+        // buildHttp: true,
+        // layers: true,
+        // lazyCompilation: true,
+        // outputModule: true,
+        // syncWebAssembly: true,
+        topLevelAwait: true,
+    },
     resolve: {
         extensions: [".js", ".ts", ".jsx", ".tsx"],
         fallback: {

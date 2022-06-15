@@ -7,14 +7,17 @@ import {
 import { Loading } from 'quasar';
 import { IIcon } from '../scripts/types';
 import { dfx } from '../scripts/dfx';
-import { isDef, persistentStorage } from '../scripts/basic';
+import { isDef } from '../scripts/basic';
 import {
-    createUser, fetchFileSystem, fetchSettingBatch, getUserInfo, storeFileSystem, storeSettingBatch,
+    createUser, getUserInfo,
 } from '../scripts/user';
-import ROOT, { deserialize, IDirectory } from '../scripts/fs';
-import { deserializeUserSettings, serializeUserSettings, setSettingsWatcher } from '.';
+import ROOT, { IDirectory } from '../scripts/fs';
+import {
+    deserializeUserSettings, putAllSettingsInCache, setSettingsWatcher,
+} from '.';
 import { notifyNeg } from '../scripts/notify';
 import { commitAll } from '../scripts/storage';
+import { CacheManager } from '../scripts/cacheManager';
 
 export interface IUser {
     uid: string;
@@ -51,6 +54,8 @@ const useUser = defineStore('useUserStore', () => {
         isAutoSavingInProcess: false,
     });
 
+    let fsModifedDate = 0;
+
     const setUserInfoIfExist = async () => {
         const tempUserInfo = await getUserInfo();
         if (!isDef(tempUserInfo)) {
@@ -77,39 +82,59 @@ const useUser = defineStore('useUserStore', () => {
         };
     };
 
-    const initSystem = async () => {
-        if (isNewUser.value) return;
-        const per = progressObj(loadingPercentage, 1 + 3);
-        const fs = deserialize(await fetchFileSystem());
-        root.value = fs as IDirectory;
-        per.next();
-        const settings = await fetchSettingBatch(['extMappings', 'icons', 'theme'], () => per.next());
-        deserializeUserSettings(settings);
+    const emptyThePersistentStorage = async () => {
+        autoSaveConfig.isAutoSavingInProcess = true;
+        const len = await CacheManager.findAllDirty();
+        const per = progressObj(saveingProgressPercentage, len);
+        await commitAll({
+            itemCompletionCallback: ({ type }) => {
+                if (type === 'progress') per.next();
+            },
+        });
+        await CacheManager.clearAll();
         per.complete();
-        // console.log(root.value);
+        autoSaveConfig.isAutoSavingInProcess = false;
     };
 
     const updateFileSystem = async () => {
-        storeFileSystem(root.value);
+        await CacheManager.put('fs', 'fs', 'FileSystem', root.value, { dataModifed: fsModifedDate });
+        fsModifedDate = Date.now();
     };
 
     const saveSytemData = async () => {
         autoSaveConfig.isAutoSavingInProcess = true;
-        let per = { next: () => { }, complete: () => { } } as ReturnType<typeof progressObj>;
-        await commitAll({
-            itemCompletionCallback: (args) => {
-                if (args.type === 'itemEstimation') {
-                    per = progressObj(saveingProgressPercentage, args.items);
-                    return;
-                }
-                per.next();
-            },
-        });
+        const len = await CacheManager.findAllDirty() + 1 + 3;
+        const per = progressObj(saveingProgressPercentage, len);
         await updateFileSystem();
         per.next();
-        await storeSettingBatch(serializeUserSettings());
+        await putAllSettingsInCache(({ type }) => {
+            if (type === 'progress') per.next();
+        });
+        await commitAll({
+            itemCompletionCallback: ({ type }) => {
+                if (type === 'progress') per.next();
+            },
+        });
         per.complete();
         autoSaveConfig.isAutoSavingInProcess = false;
+    };
+
+    const initSystem = async () => {
+        if (isNewUser.value) return;
+        const per = progressObj(loadingPercentage, 1 + 3);
+
+        const fs = await CacheManager.getFs();
+        root.value = fs as IDirectory;
+        fsModifedDate = Date.now();
+
+        per.next();
+
+        const settings = await CacheManager.getSettings(['extMappings', 'icons', 'theme'], ({ type }) => {
+            if (type === 'progress') per.next();
+        });
+        deserializeUserSettings(settings);
+        per.complete();
+        emptyThePersistentStorage();
     };
 
     const startAutoSaveTimer = (time: number = 5, prefix: 'hr' | 'min' | 'sec' = 'min') => { // 5min
@@ -156,10 +181,12 @@ const useUser = defineStore('useUserStore', () => {
             message: 'Logging Out, please wait...',
         });
         try {
-            window.onbeforeunload = null;
+            // window.onbeforeunload = null;
             stopAutoSaveTimer();
             if (!autoSaveConfig.isAutoSavingInProcess) await saveSytemData();
+            await CacheManager.flushAll();
             await _authClient.logout();
+            Actor.agentOf(dfx)?.invalidateIdentity?.();
             isLoggedIn.value = false;
         } catch (e) {
             notifyNeg(e, { pre: 'Encoutered error while logout: ' });
@@ -175,7 +202,10 @@ const useUser = defineStore('useUserStore', () => {
         if (isNewUser.value) return;
         // await persistentStorage();
         setSettingsWatcher();
-        watch(root, () => updateFileSystem(), { deep: true });
+        watch(root, async () => {
+            fsModifedDate = Date.now();
+            await updateFileSystem();
+        }, { deep: true });
         startAutoSaveTimer();
     };
 
@@ -185,21 +215,20 @@ const useUser = defineStore('useUserStore', () => {
         Actor.agentOf(dfx)?.replaceIdentity?.(identity);
         _authClient.idleManager?.registerCallback(async () => {
             logout();
-            Actor.agentOf(dfx)?.invalidateIdentity?.();
         });
         isLoggedIn.value = true;
         await setUserInfoIfExist();
         if (!isNewUser.value) await initSystem();
         await initAfterProperLogin();
-        if (isDef(window)) {
-            window.onbeforeunload = (e: Event) => {
-                e.preventDefault();
-                if (isLoggedIn.value) {
-                    return 'Are you sure? You may lose data that has not be committed to the backend! To avoid this, please logout.';
-                }
-                return null;
-            };
-        }
+        // if (isDef(window)) {
+        //     window.onbeforeunload = (e: Event) => {
+        //         e.preventDefault();
+        //         if (isLoggedIn.value) {
+        //             return 'Are you sure? You may lose data that has not be committed to the backend! To avoid this, please logout.';
+        //         }
+        //         return null;
+        //     };
+        // }
     };
 
     const setLoggedInState = async (): Promise<void> => {
@@ -276,12 +305,12 @@ const useUser = defineStore('useUserStore', () => {
         root,
         isLogOutInProcess,
         loadingPercentage,
-        updateFileSystem,
         saveSytemData,
         startAutoSaveTimer,
         stopAutoSaveTimer,
         autoSaveConfig,
         saveingProgressPercentage,
+        updateFileSystem,
     };
 });
 

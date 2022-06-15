@@ -1,13 +1,13 @@
 import { isDef } from './basic';
-import { CacheManager, CanisterAssetCommitCallbackType, LocalAssetCommitCallbackType } from './cacheManager';
-import { AcceptableType, Type, UIDType } from './canisterHelper';
+import { CacheManager, LocalCommitCallbackType } from './cacheManager';
 import {
-    IDirectory, IFile, IFileSystem, isDir, isFile, makeFileUsingPath, Path, propogateSize, removeChild,
+    AcceptableType, CanisterCommitCallbackType, Type,
+} from './canisterHelper';
+import {
+    IDirectory, IFile, IFileSystem, isDir, isFile, makeFileUsingPath, Path, propogateSize,
 } from './fs';
 import { makeFsId } from './fs/utils';
 import { ItemCompletionCallbackType } from './types';
-
-type ErrorCallbackType = (error: unknown) => void;
 
 export type WriteType =
     'append'
@@ -15,8 +15,8 @@ export type WriteType =
     | 'prepend';
 
 interface ICommitCallbacks {
-    canisterCommitCallback?: CanisterAssetCommitCallbackType,
-    localCommitCompletionCallback?: LocalAssetCommitCallbackType,
+    canisterCommitCallback?: CanisterCommitCallbackType,
+    localCommitCompletionCallback?: LocalCommitCallbackType,
 }
 
 interface IOpenFileArgs<T extends Type> extends ICommitCallbacks {
@@ -40,6 +40,7 @@ interface IWriteFileArgs<T extends AcceptableType> extends ICommitCallbacks {
     uid?: string,
     mode?: WriteType,
     data: T,
+    lazyCommit?: boolean,
 }
 
 export const readFile = async <T extends Type, R = unknown>(
@@ -54,10 +55,10 @@ export const readFile = async <T extends Type, R = unknown>(
         return undefined;
     }
     try {
-        return CacheManager.get<T, R>(tempUID, node?.name || '?', {
+        return CacheManager.getAsset<T, R>(tempUID, node?.name || '?', {
             createIfRequired,
             type,
-            assetCommitCallbacks: {
+            commitCallbacks: {
                 localCallback: localCommitCompletionCallback,
                 canisterCallback: canisterCommitCallback,
             },
@@ -72,6 +73,7 @@ export const readFile = async <T extends Type, R = unknown>(
 export const writeFile = async <T extends AcceptableType>(
     {
         node, uid, data, mode, canisterCommitCallback, localCommitCompletionCallback,
+        lazyCommit,
     }: IWriteFileArgs<T>,
 ): Promise<void> => {
     const tempUID = node?._uid || uid;
@@ -80,13 +82,14 @@ export const writeFile = async <T extends AcceptableType>(
         return;
     }
 
-    CacheManager.put(tempUID, node?.name || '?', data, {
-        assetCommitCallbacks: {
+    CacheManager.putAsset(tempUID, node?.name || '?', data, {
+        commitCallbacks: {
             localCallback: localCommitCompletionCallback,
             canisterCallback: canisterCommitCallback,
         },
         sizeCallback: (size) => propogateSize(size, node),
         mode,
+        lazyCommit,
     });
 };
 
@@ -126,7 +129,7 @@ export const removeFSNode = async (node: IFileSystem) => {
     const parent = node.parent as IDirectory | undefined;
 
     if (isFile(node)) {
-        await CacheManager.remove(node._uid);
+        await CacheManager.remove('asset', node._uid);
     } else if (isDir(node)) {
         const promises = [] as Promise<void>[];
         Object.values(node._children).forEach((n) => {

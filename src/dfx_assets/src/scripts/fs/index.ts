@@ -538,10 +538,7 @@ type SerializeType =
     | Omit<IFile, 'parent'>
     | Omit<IDirectory, 'parent'>
 
-export const serialize = <
-    S = GenericObjType,
-    F = unknown
->(
+export const serialize = (
     node: IFileSystem,
 ): SerializeType => {
     if (isFile(node)) {

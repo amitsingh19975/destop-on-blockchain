@@ -1,8 +1,8 @@
 import useUser from '../stores/user';
 import { isDef } from './basic';
-import { CanisterAssetCommitCallbackType } from './cacheManager';
+import { CanisterCommitCallbackType } from './canisterHelper';
 import {
-    IFile, IDirectory, makeFile, addChild,
+    IFile, IDirectory, makeFile,
 } from './fs';
 import { notifyNeg } from './notify';
 import { writeFile, readFile, removeFSNode } from './storage';
@@ -81,7 +81,7 @@ export const saveMedia = async (node: IFile, src: Blob | string, type: string) =
         }
         return;
     }
-    const handler: CanisterAssetCommitCallbackType = (args) => {
+    const handler: CanisterCommitCallbackType = (args) => {
         if ('error' in args) throw args.error;
     };
     await new Promise<void>((resolve, reject) => {
@@ -97,6 +97,7 @@ export const saveMedia = async (node: IFile, src: Blob | string, type: string) =
             },
             localCommitCompletionCallback: handler,
             mode: 'overwrite',
+            lazyCommit: false,
         });
     });
 };
@@ -146,14 +147,16 @@ export const loadMedia = async (node: IFile, { matchType, asBase64 = false }: {
 };
 
 export const saveFileToAccount = async (file: File, curDir: IDirectory) => {
-    const node = makeFile({
-        name: file.name,
-        size: file.size,
-        useNameToGetExt: true,
-        _isCommitted: false,
-    }, curDir);
+    let tempNode: IFile | undefined;
     try {
-        const handler: CanisterAssetCommitCallbackType = (args) => {
+        const node = makeFile({
+            name: file.name,
+            size: file.size,
+            useNameToGetExt: true,
+            _isCommitted: false,
+        }, curDir);
+        tempNode = node;
+        const handler: CanisterCommitCallbackType = (args) => {
             if ('error' in args) throw args.error;
         };
         await matchMIMEType(file, {
@@ -172,6 +175,7 @@ export const saveFileToAccount = async (file: File, curDir: IDirectory) => {
                         },
                         localCommitCompletionCallback: handler,
                         mode: 'overwrite',
+                        lazyCommit: false,
                     });
                 });
             },
@@ -188,7 +192,7 @@ export const saveFileToAccount = async (file: File, curDir: IDirectory) => {
         node._isCommitted = true;
     } catch (e) {
         notifyNeg(e);
-        removeFSNode(node);
+        if (isDef(tempNode)) removeFSNode(tempNode);
     }
     await useUser().updateFileSystem();
 };

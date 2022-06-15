@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { number } from 'simple-cbor/src/value';
 import { GenericObjType, patchObject } from '../scripts/basic';
 import { IFile, IFileSystem, isFile } from '../scripts/fs';
 import { readFile } from '../scripts/storage';
@@ -54,12 +55,7 @@ const useExtMapping = defineStore('useExtMappingStore', {
             };
         },
         addMappingUsingArray<T extends ExtMappingKeyType>(exts: readonly T[], icon: string, component?: ComponentType): void {
-            exts.forEach((ext) => {
-                this.map[ext] = {
-                    icon,
-                    component,
-                };
-            });
+            exts.forEach((ext) => this.addMapping(ext, icon, component));
         },
         addIcon(ext: ExtMappingKeyType, iconName: string, icon: IIcon, component?: ComponentType): void {
             useIcons().addIcon(['fileSystem', iconName], icon);

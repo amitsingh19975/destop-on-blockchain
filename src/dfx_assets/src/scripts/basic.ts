@@ -38,3 +38,18 @@ export const patchObject = (obj: GenericObjType, patch: GenericObjType) => {
         }
     });
 };
+
+export const matchObject = (lhs: any, rhs: any): boolean => {
+    if (typeof lhs !== typeof rhs) return false;
+    if (typeof lhs !== 'object') return lhs === rhs;
+    if (lhs === null) {
+        if (rhs === null) return true;
+        return false;
+    }
+    return Object.keys(lhs).every((lk) => {
+        if (!(lk in rhs)) return false;
+        const le = lhs[lk];
+        const re = rhs[lk];
+        return matchObject(le, re);
+    });
+};

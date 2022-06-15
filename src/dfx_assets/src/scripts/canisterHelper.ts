@@ -25,10 +25,30 @@ export type AcceptableType = GenericObjType | string | {} | Blob;
 export type UIDType = string;
 export type Type = 'string' | 'blob' | 'json' | 'generic';
 export type TypeMapping<T extends Type, R = unknown> = T extends 'string' ? string : (T extends 'blob' ? Blob : T extends 'json' ? JsonObjectType : R);
+export type CommitCallbackArgsType = { error: unknown } | {
+    uid: UIDType,
+    name: string,
+};
+export type CanisterCommitCallbackType = (args: CommitCallbackArgsType) => void;
 
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
 const CHUNK_SIZE = 1.5 * 1024 * 1024; // 1.5MB
+
+const _registeredCommitCallback = {} as Record<UIDType, CanisterCommitCallbackType[]>;
+
+export const _hasCommitCallback = (uid: UIDType) => (uid in _registeredCommitCallback);
+
+export const _registerCommitCallback = (uid: UIDType, callback: CanisterCommitCallbackType) => {
+    if (!(uid in _registeredCommitCallback)) _registeredCommitCallback[uid] = [];
+    _registeredCommitCallback[uid].push(callback);
+};
+
+export const _callRegisteredCallback = (uid: UIDType, ...args: Parameters<CanisterCommitCallbackType>) => {
+    if (!(uid in _registeredCommitCallback)) return;
+    _registeredCommitCallback[uid].forEach((cb) => cb(...args));
+    delete _registeredCommitCallback[uid];
+};
 
 const constructWorkerPool = (len: number): CanisterWorker[] => {
     const res = Array<CanisterWorker>(len);
@@ -59,16 +79,18 @@ export const parse = (data: { blob: number[], type: string }): AcceptableType =>
     return JSON.parse(TEXT_DECODER.decode(temp));
 };
 
-export const handelCanisterErr = <V extends ResultOkType>(val: ResultType<V>, uid?: UIDType): val is { ok: V } => {
+export const handelCanisterErr = <V extends ResultOkType>(val: ResultType<V>, uid?: UIDType, invokeCallback = false): val is { ok: V } => {
     if ('err' in val) {
+        const entry = Object.entries(val.err)[0];
+        const message = isDef(entry) ? `${entry[0]}("${entry[1]}")` : 'unknown error occured in the canister!';
         if (isDef(uid)) {
             useCanisterManager().setState(uid, 'failed');
+            if (invokeCallback) {
+                _callRegisteredCallback(uid, { error: new Error(message) });
+                return false;
+            }
         }
-        const messgae = Object.entries(val.err)[0];
-        if (isDef(messgae)) {
-            throw new Error(`${messgae[0]}("${messgae[1]}")`);
-        }
-        throw new Error('unknown error occured in the canister!');
+        throw new Error(message);
     }
     return true;
 };
@@ -130,7 +152,7 @@ export const storeAssets = async (
         time: Date.now(),
     });
     const initErr = await initiateAssetUpload(info, [overwrite]);
-    handelCanisterErr(initErr, uid);
+    if (!handelCanisterErr(initErr, uid, true)) return;
 
     const promises: Promise<void>[] = [];
     for (let i = 0, j = 0; i < len; i += CHUNK_SIZE, j += 1) {
@@ -151,16 +173,21 @@ export const storeAssets = async (
     }
 
     try {
-        // TODO: Handle Failure
         await Promise.all(promises);
     } catch (e) {
         useCanisterManager().setState(uid, 'failed');
-        console.warn(e);
+        if (_hasCommitCallback(uid)) {
+            _callRegisteredCallback(uid, { error: e });
+        } else console.warn(e);
     }
 
     const commitErr = await commitAssetChunk(uid);
-    handelCanisterErr(commitErr, uid);
+    if (!handelCanisterErr(commitErr, uid, true)) return;
     useCanisterManager().setState(uid, 'success');
+    _callRegisteredCallback(uid, {
+        name,
+        uid,
+    });
 };
 
 export const storeAssetsBatch = async (

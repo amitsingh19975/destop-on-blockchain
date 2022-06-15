@@ -1,7 +1,9 @@
 import { createPinia } from 'pinia';
 import { watch } from 'vue';
 import { GenericObjType, isDef } from '../scripts/basic';
+import { CacheManager } from '../scripts/cacheManager';
 import { notifyNeg } from '../scripts/notify';
+import { ItemCompletionCallbackType } from '../scripts/types';
 import { storeSetting, updateUserInfo } from '../scripts/user';
 import useExtMapping from './extMapping';
 import useIcons from './icons';
@@ -14,6 +16,48 @@ export interface ISerializedUserSetting {
     theme: GenericObjType;
 }
 
+const MODIFED_TIME = {} as Record<keyof ISerializedUserSetting, number>;
+
+export const putExtMappingInCache = async (lazyCommit?: boolean) => {
+    await CacheManager.put(
+        'settings',
+        'extMappings',
+        'Extension Mapping',
+        useExtMapping().serialize(),
+        { lazyCommit, dataModifed: MODIFED_TIME.extMappings },
+    );
+};
+
+export const putIconsInCache = async (lazyCommit?: boolean) => {
+    await CacheManager.put(
+        'settings',
+        'icons',
+        'Icons',
+        useIcons().serialize(),
+        { lazyCommit, dataModifed: MODIFED_TIME.icons },
+    );
+};
+
+export const putThemeInCache = async (lazyCommit?: boolean) => {
+    await CacheManager.put(
+        'settings',
+        'theme',
+        'Theme',
+        useTheme().serialize(),
+        { lazyCommit, dataModifed: MODIFED_TIME.theme },
+    );
+};
+
+export const putAllSettingsInCache = async (itemCompletionCallback: ItemCompletionCallbackType, lazyCommit?: boolean) => {
+    itemCompletionCallback({ type: 'itemEstimation', items: 3 });
+    await putExtMappingInCache(lazyCommit);
+    itemCompletionCallback({ type: 'progress', item: { uid: 'extMappings' } });
+    await putIconsInCache(lazyCommit);
+    itemCompletionCallback({ type: 'progress', item: { uid: 'icons' } });
+    await putThemeInCache(lazyCommit);
+    itemCompletionCallback({ type: 'progress', item: { uid: 'theme' } });
+};
+
 export const setSettingsWatcher = (): void => {
     watch(() => useUser().$state, async ({ userInfo }) => {
         try {
@@ -23,13 +67,16 @@ export const setSettingsWatcher = (): void => {
         }
     }, { deep: true });
     watch(() => useExtMapping().$state, () => {
-        storeSetting('extMappings', useExtMapping().serialize());
+        MODIFED_TIME.extMappings = Date.now();
+        putExtMappingInCache();
     }, { deep: true });
     watch(() => useIcons().$state, () => {
-        storeSetting('icons', useIcons().serialize());
+        MODIFED_TIME.icons = Date.now();
+        putIconsInCache();
     }, { deep: true });
     watch(() => useTheme().$state, () => {
-        storeSetting('theme', useTheme().serialize());
+        MODIFED_TIME.theme = Date.now();
+        putThemeInCache();
     }, { deep: true });
 };
 

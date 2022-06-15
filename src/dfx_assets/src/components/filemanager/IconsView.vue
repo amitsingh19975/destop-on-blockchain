@@ -171,13 +171,7 @@ const contextMenu: IContextMenuBindingArgs = {
             },
         },
         Remove: {
-            showCondition: () => {
-                if (!isDef(curFocusedNode)) return false;
-                const { _uid, _isCommitted } = curFocusedNode;
-                const item = useCanisterManager().getItem(_uid);
-                if (!isDef(item)) return _isCommitted;
-                return _isCommitted && (item.state === 'success' || item.state === 'failed');
-            },
+            showCondition: () => isDef(curFocusedNode),
             action: async () => {
                 await removeFSNode(curFocusedNode!);
             },
