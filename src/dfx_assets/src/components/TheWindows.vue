@@ -63,15 +63,14 @@ export default defineComponent({
             'closeWindow',
             'setToFullScreen',
             'restoreWindowShape',
+            'updateShape',
         ]),
         handleResize(
             pid: PIDType,
             { width, height, type }: WindowResizeEventType,
         ): void {
             if (type === 'start') this.focusOn('window', pid);
-            const window = this._window(pid);
-            window.width = width;
-            window.height = height;
+            this.updateShape(pid, width, height);
         },
         handleDrag(
             pid: PIDType,

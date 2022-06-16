@@ -366,6 +366,10 @@ const useWindowManager = defineStore('useWindowManagerStore', {
                 win.height = height;
                 win.width = width;
                 win.isFullScreen = true;
+                useEvent().dispatchEvent('change:shape', pid, {
+                    width,
+                    height,
+                });
                 useEvent().dispatchEvent('fullscreen', pid);
             }
         },
@@ -376,6 +380,7 @@ const useWindowManager = defineStore('useWindowManagerStore', {
                 this._restoreOldShape(win);
                 this._old.delete(pid);
                 win.isFullScreen = false;
+                useEvent().dispatchEvent('change:shape', pid, this.windowShape(pid));
                 useEvent().dispatchEvent('restoreShape', pid);
             }
         },

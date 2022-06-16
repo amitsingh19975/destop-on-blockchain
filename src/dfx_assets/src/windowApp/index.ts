@@ -9,6 +9,7 @@ import AppMusicPlayer from './AppMusicPlayer.vue';
 import AppDesktopWallpaper from './AppDesktopWallpaper.vue';
 import AppProfile from './AppProfile.vue';
 import AppDownloadManager from './AppDownloadManager.vue';
+import AppPingPong from './AppPingPong.vue';
 
 const components = {
     AppJsonEditor,
@@ -21,6 +22,7 @@ const components = {
     AppDesktopWallpaper,
     AppProfile,
     AppDownloadManager,
+    AppPingPong,
 } as const;
 
 export default function registerWinApp(app: App): void {
