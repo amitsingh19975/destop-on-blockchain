@@ -1,37 +1,46 @@
-# dfx
+## Inspiration
 
-Welcome to your new dfx project and to the internet computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+Ever since I heard about decentralized technology 3 to 4 years back, my mind had all kinds of interesting, good, and bad ideas, including `OS` on-chain. A thought would come to my mind that should I try to implement it and see where would it take me, but procrastination always put these ideas in the backseat; I would give time to other projects. This time around, I decided to do it as I found the project to be possible with a canister model of `Dfinity` and memory cost, which is acceptable by many. Although I had the idea to implement a whole `OS`, I soon found it laborious and time-intensive and decided to implement a desktop. After the competition, I would love to implement `OS` on the blockchain if I get the time and more resources.
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+## What it does
 
-To learn more before you start working with dfx, see the following documentation available online:
+The app tries to move desktop experience on the blockchain allowing users to access it anywhere in the world as long as they have a proper internet connection. You can create and edit text, play audio or music, watch videos, open images, etc. At this point, we have limited features that could be extended in the future.
 
-- [Quick Start](https://smartcontracts.org/docs/quickstart/quickstart-intro.html)
-- [SDK Developer Tools](https://smartcontracts.org/docs/developers-guide/sdk-guide.html)
-- [Rust Canister Devlopment Guide](https://smartcontracts.org/docs/rust-guide/rust-intro.html)
-- [ic-cdk](https://docs.rs/ic-cdk)
-- [ic-cdk-macros](https://docs.rs/ic-cdk-macros)
-- [Candid Introduction](https://smartcontracts.org/docs/candid-guide/candid-intro.html)
-- [JavaScript API Reference](https://erxue-5aaaa-aaaab-qaagq-cai.raw.ic0.app)
+## How we built it
 
-If you want to start working on your project right away, you might want to try the following commands:
+As of right now, I have implemented everything using HTML, CSS, Vue, Dfinity and Typescript and other third-party libraries.
 
-```bash
-cd dfx/
-dfx help
-dfx config --help
-```
+## Challenges we ran into
 
-## Running the project locally
+There were a few problems that gave me a hard time:
 
-If you want to test your project locally, you can use the following commands:
+- Designing the System.
+- Storing assets.
+- Caching the data so that you do not put pressure on bandwidth.
+- Trying to design the best way to interact with the canister.
+- Adding window apps dynamically.
+- Adding a context menu
+- Adding quasi-support for offline interaction.
 
-```bash
-# Starts the replica, running in the background
-dfx start --background
+There are also a few problems that I'm unable to solve:
 
-# Deploys your canisters to the replica and generates your candid interface
-dfx deploy
-```
+- Adding web worker (due to limitation)
+- Adding full support for offline mode.
+- Allowing streaming rather than downloading the whole asset in one go.
 
-Once the job completes, your application will be available at `http://localhost:8000?canisterId={asset_canister_id}`.
+## Accomplishments that we're proud of
+
+The thing that I'm most proud of is how the app turns out, and a few honorary mentions:
+
+- Improved knowledge of Typescript, Vue, HTML and CSS.
+- Designed cache manager, window manager, etc
+
+## What we learned
+
+- Learned to work with webpack, Dfinity's canister and Motoko
+- IndexedDb
+- How to design a system
+
+## What's next for Mini Desktop
+
+My next task would be to move the implementation to wasm and optimize the app properly. Furthermore, add features, such as shortcuts, notifications, full offline support, etc., and bring the app close to its offline counterpart.
