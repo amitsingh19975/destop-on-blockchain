@@ -82,6 +82,7 @@ const createNewFileOrFolder = async () => {
     } else {
         makeFile({
             name: value.value,
+            useNameToGetExt: true,
         }, props.root);
     }
     emits('update:modelValue', false);
