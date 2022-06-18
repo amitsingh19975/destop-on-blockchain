@@ -39,7 +39,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent, ref, toRef } from 'vue';
+import { storeToRefs } from 'pinia';
 import baseWindowComp from '../scripts/baseWindowComp';
 import VBtn from '../components/VBtn.vue';
 import useTheme from '../stores/theme';
@@ -54,9 +55,12 @@ export default defineComponent({
         VBtn,
     },
     setup() {
+        const store = useTheme();
+        const color = ref(store.compColor('desktop', 'backgroundColor'));
+        const image = ref(store.images.desktop.backgroundImage || '');
         return {
-            color: ref(useTheme().compColor('desktop', 'backgroundColor')),
-            image: 'https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885_1280.jpg',
+            color,
+            image,
             selector: ref<SelectorType>('color'),
         };
     },

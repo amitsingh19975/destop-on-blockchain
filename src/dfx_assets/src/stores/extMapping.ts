@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { number } from 'simple-cbor/src/value';
+import { toRaw } from 'vue';
 import { GenericObjType, patchObject } from '../scripts/basic';
 import { IFile, IFileSystem, isFile } from '../scripts/fs';
 import { readFile } from '../scripts/storage';
@@ -43,7 +44,7 @@ const useExtMapping = defineStore('useExtMappingStore', {
     },
     actions: {
         serialize(): GenericObjType {
-            return this.map;
+            return toRaw(this.map);
         },
         deserialize(data: GenericObjType): void {
             patchObject(this.map, data);

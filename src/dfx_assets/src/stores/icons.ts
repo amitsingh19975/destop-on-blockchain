@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 
+import { toRaw } from 'vue';
 import { IIcon } from '../scripts/types';
 import { GenericObjType, isDef, patchObject } from '../scripts/basic';
 import { ComponentType } from '../windowApp';
@@ -128,7 +129,7 @@ const useIcons = defineStore('useIconsStore', {
             this.icons.components[component] = icon;
         },
         serialize(): GenericObjType {
-            return this.icons;
+            return toRaw(this.icons);
         },
         deserialize(data: GenericObjType): void {
             patchObject(this.icons, data);

@@ -4,7 +4,7 @@ import { GenericObjType, isDef } from '../scripts/basic';
 import { CacheManager } from '../scripts/cacheManager';
 import { notifyNeg } from '../scripts/notify';
 import { ItemCompletionCallbackType } from '../scripts/types';
-import { storeSetting, updateUserInfo } from '../scripts/user';
+import { updateUserInfo } from '../scripts/user';
 import useExtMapping from './extMapping';
 import useIcons from './icons';
 import useTheme from './theme';

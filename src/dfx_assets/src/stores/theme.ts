@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import {
     getCssVar, setCssVar, Dark, colors,
 } from 'quasar';
+import { toRaw } from 'vue';
 import { GenericObjType, patchObject } from '../scripts/basic';
 
 type BaseColorsType = {
@@ -156,8 +157,8 @@ const useTheme = defineStore('useThemeStore', {
         _serializeHelper() {
             return {
                 baseColors,
-                colors: this.colors,
-                images: this.images,
+                colors: toRaw(this.colors),
+                images: toRaw(this.images),
             };
         },
         serialize(): GenericObjType {

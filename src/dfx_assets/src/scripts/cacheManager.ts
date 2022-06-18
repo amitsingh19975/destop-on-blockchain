@@ -290,7 +290,9 @@ export namespace CacheManager {
 
         const prevData = await _get('info', kind, uid);
         const modifed = isDef(prevData) ? prevData.meta.modifed : Date.now();
+        console.log('HERE: ', name, prevData, modifed, normalizedData);
         if (isDef(dataModifed) && isDef(prevData) && dataModifed <= modifed) return;
+        console.log('AFTER: ', name, prevData, modifed, normalizedData);
         // if (matchObject(normalizeData, await _get('data', kind, uid))) return;
 
         try {
@@ -453,6 +455,7 @@ export namespace CacheManager {
                 };
                 promises.push(fn());
             });
+            await Promise.all(promises);
             return res as GetSettingsReturnType<U>;
         }
         itemCompletionCallback({ type: 'itemEstimation', items: uids.length });
