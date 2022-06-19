@@ -44,3 +44,7 @@ The thing that I'm most proud of is how the app turns out, and a few honorary me
 ## What's next for Mini Desktop
 
 My next task would be to move the implementation to wasm and optimize the app properly. Furthermore, add features, such as shortcuts, notifications, full offline support, etc., and bring the app close to its offline counterpart.
+
+![DesktopApp](assets/Main.png)
+
+For more screenshots [click here](assets).
