@@ -36,6 +36,8 @@
         "eslint-plugin-import": "^2.26.0",
         "eslint-plugin-vue": "^8.7.1",
         "events": "3.3.0",
+        "gulp": "^4.0.2",
+        "gulp-gh-pages": "^0.5.4",
         "html-webpack-plugin": "5.5.0",
         "prettier": "2.6.2",
         "process": "0.11.10",
