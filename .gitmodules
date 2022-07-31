@@ -1,3 +1,0 @@
-[submodule "src/dfx_assets/src/vendor/vue-dndrop"]
-	path = src/dfx_assets/src/vendor/vue-dndrop
-	url = git@github.com:amitsingh19975/vue-dndrop.git
