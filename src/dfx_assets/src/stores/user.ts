@@ -1,12 +1,9 @@
 import { defineStore } from 'pinia';
-import { AuthClient } from '@dfinity/auth-client';
-import { Actor } from '@dfinity/agent';
 import {
     Ref, ref, shallowReactive, watch,
 } from 'vue';
 import { Loading } from 'quasar';
 import { IIcon } from '../scripts/types';
-import { dfx } from '../scripts/dfx';
 import { isDef } from '../scripts/basic';
 import {
     createUser, getUserInfo,
@@ -35,7 +32,6 @@ const defaultUserInfo = (): IUser => ({
 
 const useUser = defineStore('useUserStore', () => {
     const userInfo = ref<IUser>(defaultUserInfo());
-    let _authClient = undefined as (AuthClient | undefined);
     const isLoggedIn = ref(false);
     const isNewUser = ref(false);
     const root = ref<IDirectory>(ROOT);
@@ -175,7 +171,6 @@ const useUser = defineStore('useUserStore', () => {
     };
 
     const logout = async (): Promise<boolean> => {
-        if (!isDef(_authClient)) return true;
         isLogOutInProcess.value = true;
         Loading.show({
             message: 'Logging Out, please wait...',
@@ -185,8 +180,6 @@ const useUser = defineStore('useUserStore', () => {
             stopAutoSaveTimer();
             if (!autoSaveConfig.isAutoSavingInProcess) await saveSytemData();
             await CacheManager.flushAll();
-            await _authClient.logout();
-            Actor.agentOf(dfx)?.invalidateIdentity?.();
             isLoggedIn.value = false;
         } catch (e) {
             notifyNeg(e, { pre: 'Encoutered error while logout: ' });
@@ -210,12 +203,6 @@ const useUser = defineStore('useUserStore', () => {
     };
 
     const handleAuthenticated = async () => {
-        if (!isDef(_authClient)) return;
-        const identity = _authClient.getIdentity();
-        Actor.agentOf(dfx)?.replaceIdentity?.(identity);
-        _authClient.idleManager?.registerCallback(async () => {
-            logout();
-        });
         isLoggedIn.value = true;
         await setUserInfoIfExist();
         if (!isNewUser.value) await initSystem();
@@ -231,57 +218,16 @@ const useUser = defineStore('useUserStore', () => {
         // }
     };
 
-    const setLoggedInState = async (): Promise<void> => {
-        if (!isDef(_authClient)) return;
-        isLoggedIn.value = await _authClient.isAuthenticated();
+    const setLoggedInState = (): void => {
+        isLoggedIn.value = true;
     };
 
     const init = async (): Promise<void> => {
-        if (!isDef(_authClient)) _authClient = await AuthClient.create();
-
-        await setLoggedInState();
-        if (isLoggedIn.value) handleAuthenticated();
+        setLoggedInState();
+        if (isLoggedIn.value) await handleAuthenticated();
     };
 
-    const identityCanisterURL = () => {
-        // @ts-ignore
-        const network = process.env.DFX_NETWORK || process.env.NODE_ENV === 'production' ? 'ic' : 'local';
-        // @ts-ignore
-        const canisterIIId = process.env.II_CANISTER_ID;
-        if (network === 'local') {
-            // return `https://${canisterIIId}.localhost:8000?#authorize`;
-            return `http://localhost:8000/?canisterId=${canisterIIId}`;
-        }
-        if (network === 'ic') {
-            return `https://${canisterIIId}.ic0.app`;
-        }
-        return `https://${canisterIIId}.dfinity.network`;
-    };
-
-    const login = (): Promise<void> => {
-        const days = 1n;
-        const hours = 24n;
-        const nanoseconds = 3_600_000_000_000n;
-        return new Promise<void>((resolve, reject) => {
-            if (!isDef(_authClient)) {
-                reject('Method["login"] called before method["init"]!');
-                return;
-            }
-            _authClient.login({
-                identityProvider: identityCanisterURL(),
-                onSuccess: async () => {
-                    await handleAuthenticated();
-                    resolve();
-                },
-                onError: (error?: string) => {
-                    isLoggedIn.value = false;
-                    userInfo.value = defaultUserInfo();
-                    reject(error);
-                },
-                maxTimeToLive: days * hours * nanoseconds,
-            });
-        });
-    };
+    const login = (): Promise<void> => handleAuthenticated();
 
     const createNewUser = async (...args: Parameters<typeof createUser>) => {
         if (!isNewUser.value) throw new Error('User already exists!');
