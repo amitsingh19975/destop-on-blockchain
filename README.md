@@ -1,3 +1,5 @@
+# [Demo](https://amitsingh19975.github.io/destop-on-blockchain)
+
 ## Inspiration
 
 Ever since I heard about decentralized technology 3 to 4 years back, my mind had all kinds of interesting, good, and bad ideas, including `OS` on-chain. A thought would come to my mind that should I try to implement it and see where would it take me, but procrastination always put these ideas in the backseat; I would give time to other projects. This time around, I decided to do it as I found the project to be possible with a canister model of `Dfinity` and memory cost, which is acceptable by many. Although I had the idea to implement a whole `OS`, I soon found it laborious and time-intensive and decided to implement a desktop. After the competition, I would love to implement `OS` on the blockchain if I get the time and more resources.
