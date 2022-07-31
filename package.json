@@ -9,6 +9,7 @@
         "Canister"
     ],
     "scripts": {
+        "publish": "npm run build && npx gulp deploy",
         "build": "webpack",
         "prebuild": "npm run copy:types",
         "start": "webpack serve --mode development --env development",
